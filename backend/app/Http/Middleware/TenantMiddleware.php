@@ -81,6 +81,18 @@ class TenantMiddleware
                 ->first();
         }
 
+        // Fallback: tenant por defecto (config app.default_tenant / env DEFAULT_TENANT).
+        // Solo para entornos sin DNS con wildcard (p. ej. el subdominio automático de la
+        // plataforma). En multi-tenant real va vacío y el subdominio real (resuelto arriba)
+        // siempre tiene prioridad.
+        $default = config('app.default_tenant');
+        if (is_string($default) && trim($default) !== '') {
+            return Tenant::query()
+                ->where('subdomain', strtolower(trim($default)))
+                ->where('status', 'active')
+                ->first();
+        }
+
         return null;
     }
 

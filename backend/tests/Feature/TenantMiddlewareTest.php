@@ -160,6 +160,30 @@ class TenantMiddlewareTest extends TestCase
         $this->assertSame($real->id, app('tenant')->id);
     }
 
+    public function test_usa_el_tenant_por_defecto_si_no_resuelve_por_otra_via(): void
+    {
+        // Entorno sin DNS con wildcard: el subdominio automático no es un tenant ni hay
+        // cabecera, pero app.default_tenant resuelve el tenant configurado.
+        $tenant = $this->makeTenant('demo');
+        config(['app.default_tenant' => 'demo']);
+
+        $response = $this->passThrough('test-julio-gestioname-app.deploy.datarecover.cloud');
+
+        $this->assertSame('ok', $response->getContent());
+        $this->assertSame($tenant->id, app('tenant')->id);
+    }
+
+    public function test_el_subdominio_real_tiene_prioridad_sobre_el_tenant_por_defecto(): void
+    {
+        $real = $this->makeTenant('empresa1');
+        $this->makeTenant('demo');
+        config(['app.default_tenant' => 'demo']);
+
+        $response = $this->passThrough('empresa1.gestioname.app');
+
+        $this->assertSame($real->id, app('tenant')->id);
+    }
+
     public function test_rechaza_identificadores_de_schema_no_validos(): void
     {
         // Defensa en profundidad: switchSchema bloquea cualquier identificador que no

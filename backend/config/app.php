@@ -28,6 +28,13 @@ return [
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
     /*
+    | Tenant por defecto cuando no se puede resolver por subdominio, dominio propio ni
+    | cabecera X-Tenant-ID. Medida temporal para entornos sin DNS con wildcard (p. ej. el
+    | subdominio automático de la plataforma). En multi-tenant real, dejar VACÍO.
+    */
+    'default_tenant' => env('DEFAULT_TENANT'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
