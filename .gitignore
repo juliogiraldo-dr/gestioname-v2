@@ -1,0 +1,39 @@
+# Entorno
+.env
+.env.production
+.env.*.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build
+.next/
+/backend/public/hot
+/backend/public/storage
+/backend/storage/*.key
+/backend/storage/app/public/
+/backend/storage/app/private/
+/backend/database/database.sqlite
+/backend/bootstrap/cache/*.php
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+/backend/storage/logs/
+
+# Backups
+backups/
+*.sql.gz
+
+# Coverage
+coverage/

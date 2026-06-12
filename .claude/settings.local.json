@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls app/Http/Middleware)",
+      "Bash(ls app/Models)",
+      "Bash(ls app/Console/Commands)",
+      "Bash(ls -R database/migrations)",
+      "Bash(php -v)",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "Read(//tmp/**)"
+    ]
+  }
+}

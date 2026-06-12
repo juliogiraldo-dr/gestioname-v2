@@ -1,0 +1,3 @@
+# Migraciones que se ejecutan en CADA schema de tenant (employees, members, etc.).
+# Se aplican por schema vía `tenant:create` y `migrate:tenants` (search_path activo),
+# NUNCA con el `php artisan migrate` por defecto.

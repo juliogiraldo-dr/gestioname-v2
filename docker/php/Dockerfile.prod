@@ -1,0 +1,38 @@
+# Imagen de producción del backend Laravel (código horneado en la imagen).
+# Contexto de build: raíz del repo. Uso: docker build -f docker/php/Dockerfile.prod .
+FROM php:8.4-fpm-alpine
+
+RUN apk add --no-cache \
+    git curl libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev \
+    libzip-dev zip unzip postgresql-dev icu-dev oniguruma-dev
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip intl opcache
+
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www
+
+# Dependencias de producción (sin dev, autoloader optimizado).
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts --prefer-dist
+
+# Código de la aplicación.
+COPY backend/ /var/www/
+RUN composer dump-autoload --optimize --no-dev \
+    && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+# El entrypoint cachea config/rutas en arranque (cuando el .env ya está presente),
+# evita cachear con un entorno vacío durante el build, y lanza php-fpm.
+COPY docker/php/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["php-fpm"]

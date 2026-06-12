@@ -1,0 +1,22 @@
+# Imagen de producción del frontend Next.js (build standalone horneado).
+# Contexto de build: raíz del repo. Uso: docker build -f docker/node/Dockerfile.prod .
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+# En producción la API se sirve en el mismo origen bajo /api (el subdominio = tenant).
+ENV NEXT_PUBLIC_API_URL=/api/v1
+ENV NEXT_PUBLIC_TENANT=
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
+# Salida standalone de Next (next.config: output: 'standalone').
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+EXPOSE 3000
+CMD ["node", "server.js"]

@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/*
+ * Sistema de diseño Fluent (estilo Microsoft 365 / Azure Portal):
+ * tipografía limpia, espaciado generoso, sombras sutiles, sin neón.
+ */
+@theme {
+  --color-primary: #0f2756;        /* azul oscuro corporativo */
+  --color-primary-600: #1b3a73;
+  --color-secondary: #5eb8d0;      /* azul medio */
+  --color-accent: #68dfb9;         /* verde menta */
+
+  --color-surface: #ffffff;
+  --color-canvas: #f4f6fa;         /* fondo gris muy claro */
+  --color-line: #e4e9f0;           /* bordes sutiles */
+  --color-ink: #1b2733;            /* texto principal */
+  --color-ink-soft: #5b6b7d;       /* texto secundario */
+
+  --font-sans:
+    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-fluent: 0.5rem;
+  --shadow-fluent: 0 1px 2px rgba(15, 39, 86, 0.06), 0 4px 12px rgba(15, 39, 86, 0.06);
+  --shadow-fluent-lg: 0 8px 28px rgba(15, 39, 86, 0.12);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cdd6e2 transparent;
+}
