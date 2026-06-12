@@ -142,7 +142,7 @@
 - [x] **Modelos por tenant** (`tenant_modules`): RRHH, Socios, Tesorería, Nóminas (futuro), Comunicaciones (futuro), activables individualmente. Endpoints `GET /tenant-modules`, `PATCH /tenant-modules/{key}`. Migrado demo sin pérdida (entidades desacopladas de empresa; flags de módulo movidos de `companies` a `tenant_modules`).
 - [x] **Dashboard admin completo**, gating de menú por módulos activos:
   - `/admin/configuracion`: módulos · grupos y empresas · centros · convenios (+ tipos de ausencia) · hitos · festivos · calendarios (plantillas + calendarios)
-  - `/admin/empleados`: listado con filtros + ficha con pestañas (datos personales, laboral; formación/documentos/materiales/comportamiento pendientes de backend) + alta + invitación
+  - `/admin/empleados`: listado con filtros + ficha con **todas las pestañas operativas** (datos personales, laboral, formación, documentos, materiales, comportamiento) + alta + invitación
   - `/admin/fichajes`: vista diaria con barra visual + corrección/borrado con auditoría obligatoria (ET 34.9)
   - `/admin/ausencias`: pendientes (aprobar/rechazar) + listado mensual + resumen de vacaciones
   - `/admin/entidades`, `/admin/socios` (ficha + pagos), `/admin/tesoreria` (KPIs + gastos + pagos): independientes de empresa
@@ -156,7 +156,8 @@
 - [x] **Registro público** (`/`): landing + onboarding con validación de subdominio en tiempo real; `POST /register` (sin tenant) provisiona tenant Free 30 días trial, módulos según tipo y magic link de bienvenida.
 - [x] **Marca blanca**: `tenants.custom_domain` + `tenant_branding`; `TenantMiddleware` resuelve por dominio propio; `GET /branding` público (caché 10 min) aplicado en el frontend (color/logo/nombre).
 - [x] **Fichaje**: kiosk `/clock` (PIN, identificación por nombre, hitos, confirmación con hora, auto-reset 5 s, alertas); portal «Mis fichajes» semanal con horas/día e indicador de salida pendiente; admin fichajes con barra visual + alertas (sin fichar / incompletos) + corrección con auditoría.
-- [x] **Optimización**: índice `member_payments(member_id, year)` (el resto ya existían); caché Redis de plan limits (5 min) y branding (10 min); `Skeleton` loaders y `useDebounce` (búsquedas). _Pendiente: paginación en cliente y React Query/SWR (los listados ya pagina el backend; el front usa la primera página)._
+- [x] **Optimización**: índice `member_payments(member_id, year)` (el resto ya existían); caché Redis de plan limits (5 min) y branding (10 min); `Skeleton` loaders y `useDebounce` (búsquedas).
+- [x] **React Query + paginación**: `@tanstack/react-query` (QueryProvider en el layout raíz); listados de empleados, socios, ausencias y fichajes con `useQuery` (caché + invalidación al mutar). Paginación en servidor a 20/página con controles Anterior/Siguiente (`Pagination` + `Paginated<T>` en `ui.tsx`); fichajes pagina por día.
 - [x] **Fichas de empleado** completadas: Formación, Materiales, Comportamiento (CRUD) y Documentos (subida/descarga real a disco). Ficha de socio ya estaba completa.
 - [x] Categorías de gasto por defecto al crear entidad (Alquiler, Material, Actos, Seguros)
 - [x] CRUD Socios (`members`): ficha completa, `dni` cifrado (LOPD), nº de socio autonumerado por entidad, filtros (estado, tipo, búsqueda)
@@ -267,7 +268,8 @@
 - [x] **PDFs** (DomPDF): recibo de pago, ficha de socio, carnet de socio y listado de socios (`SocioPdfService` + vistas Blade). Botones en Socios.
 - [x] **Import/Export Excel**: importar/exportar socios (plantilla + filtros), exportar empleados (import de empleados ya existía). `SocioImportService`, `EmployeeImportService::export`.
 - [x] **Backup JSON** de entidad: exportar/importar entidad completa (tipos, socios, pagos, categorías, gastos) — `EntityBackupService`.
-- [ ] **Pendiente** (requieren módulos nuevos amplios): portal del empleado ampliado (editar perfil/foto, ausencias con calendario, datos laborales), `/admin/comunicaciones` (email masivo socios/empleados, recordatorios automáticos de cuota). El portal básico (fichajes, horario, ausencias, documentos, nóminas) ya existe.
+- [x] **Portal del empleado ampliado**: «Mis datos» (editar nombre/teléfono/dirección + subir foto de avatar, `PUT /me/profile`, `POST/GET /me/avatar`) y «Datos laborales» (contrato, convenio y horario asignado, `GET /me/labor`). Ausencias con rango de fechas ya existía.
+- [x] **`/admin/comunicaciones`**: email masivo a socios (filtros estado/tipo/estado de pago, vista previa + envío + historial), email masivo a empleados (por empresa o todas) y recordatorio automático de cuota por entidad (activar/desactivar, días antes del cierre, plantilla). Backend: `CommunicationService`, `MassEmailNotification` (plantilla `emails/action`), tablas `communications` y `quota_reminder_settings`, comando programado `reminders:quota` (diario, multi-tenant). Tests: `ComunicacionesTest` (4), `PortalProfileTest` (3).
 
 ### Bloque D — Rol Gestoría + Zona de descarga ✅
 - [x] **Rol `gestoria`** (Spatie, sembrado por tenant). Puede ver/descargar y subir nóminas, ver informes RRHH y generar enlaces de descarga. **No** ve datos sensibles (DNI/IBAN ocultos en el modelo) ni puede modificar empleados, fichajes o configuración (rutas `role:admin|super-admin`). Usuario demo `gestoria@demo.gestioname.app`.

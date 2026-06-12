@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, downloadFile, uploadFile } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
-import { Avatar, Badge, Button, Card, EmptyState, PageHeader, SelectField, Spinner, TextField } from "@/components/ui";
+import { Avatar, Badge, Button, Card, EmptyState, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, TextField } from "@/components/ui";
 
 type Entity = { id: string; name: string };
 type MemberType = { id: string; name: string; fee_amount: number };
@@ -39,15 +40,15 @@ const eur = (n: number) => new Intl.NumberFormat("es-ES", { style: "currency", c
 export default function SociosPage() {
   const [entities, setEntities] = useState<Entity[] | null>(null);
   const [entityId, setEntityId] = useState("");
-  const [types, setTypes] = useState<MemberType[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
+  const [page, setPage] = useState(1);
   const [showNewMember, setShowNewMember] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const toast = useToast();
   const confirm = useConfirm();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     void (async () => {
@@ -57,20 +58,26 @@ export default function SociosPage() {
     })();
   }, []);
 
-  const loadMembers = useCallback(async () => {
-    if (!entityId) return;
-    const params = new URLSearchParams();
-    if (statusFilter) params.set("status", statusFilter);
-    if (debouncedSearch) params.set("search", debouncedSearch);
-    const [m, t] = await Promise.all([
-      api<{ data: Member[] }>(`/entities/${entityId}/members?${params}`),
-      api<{ data: MemberType[] }>(`/entities/${entityId}/member-types`),
-    ]);
-    setMembers(m.data);
-    setTypes(t.data);
-  }, [entityId, statusFilter, debouncedSearch]);
+  const typesQuery = useQuery({
+    queryKey: ["member-types", entityId],
+    enabled: !!entityId,
+    queryFn: () => api<{ data: MemberType[] }>(`/entities/${entityId}/member-types`),
+  });
+  const types = typesQuery.data?.data ?? [];
 
-  useEffect(() => { void (async () => { await loadMembers(); })(); }, [loadMembers]);
+  const membersQuery = useQuery({
+    queryKey: ["members", entityId, statusFilter, debouncedSearch, page],
+    enabled: !!entityId,
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page) });
+      if (statusFilter) params.set("status", statusFilter);
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      return api<Paginated<Member>>(`/entities/${entityId}/members?${params}`);
+    },
+  });
+  const members = membersQuery.data?.data ?? [];
+
+  const refreshMembers = useCallback(() => { void queryClient.invalidateQueries({ queryKey: ["members"] }); }, [queryClient]);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +87,7 @@ export default function SociosPage() {
     try {
       await api(`/members/${id}`, { method: "DELETE" });
       toast.success("Socio eliminado.");
-      void loadMembers();
+      refreshMembers();
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "No se pudo eliminar.");
     }
@@ -104,7 +111,7 @@ export default function SociosPage() {
     try {
       const res = await uploadFile<{ data: { imported: number; errors: unknown[] } }>(`/entities/${entityId}/members/import`, file);
       toast.success(`${res.data.imported} socios importados${res.data.errors.length ? `, ${res.data.errors.length} con errores` : ""}.`);
-      void loadMembers();
+      refreshMembers();
     } catch (e) { toast.error(e instanceof ApiError ? e.message : "No se pudo importar."); }
   }
 
@@ -128,9 +135,9 @@ export default function SociosPage() {
 
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <SelectField label="Entidad" value={entityId} onChange={setEntityId} options={entities.map((e) => [e.id, e.name] as const)} />
-          <SelectField label="Estado" value={statusFilter} onChange={setStatusFilter} options={STATUS_FILTERS} />
-          <TextField label="Buscar" value={search} onChange={setSearch} placeholder="Nombre o nº de socio" className="flex-1" />
+          <SelectField label="Entidad" value={entityId} onChange={(v) => { setEntityId(v); setPage(1); }} options={entities.map((e) => [e.id, e.name] as const)} />
+          <SelectField label="Estado" value={statusFilter} onChange={(v) => { setStatusFilter(v); setPage(1); }} options={STATUS_FILTERS} />
+          <TextField label="Buscar" value={search} onChange={(v) => { setSearch(v); setPage(1); }} placeholder="Nombre o nº de socio" className="flex-1" />
           <Button variant="secondary" onClick={() => setShowNewMember((v) => !v)}>Nuevo socio</Button>
         </div>
         {entityId && entities.length > 0 && (
@@ -145,14 +152,16 @@ export default function SociosPage() {
       </Card>
 
       {showNewMember && (
-        <NewMemberForm entityId={entityId} types={types} onDone={() => { setShowNewMember(false); void loadMembers(); }} />
+        <NewMemberForm entityId={entityId} types={types} onDone={() => { setShowNewMember(false); refreshMembers(); }} />
       )}
 
       {selectedMemberId ? (
-        <MemberDetail memberId={selectedMemberId} types={types} onBack={() => setSelectedMemberId(null)} onChanged={() => void loadMembers()} />
+        <MemberDetail memberId={selectedMemberId} types={types} onBack={() => setSelectedMemberId(null)} onChanged={refreshMembers} />
       ) : (
         <Card className="overflow-hidden">
-          {members.length === 0 ? (
+          {membersQuery.isLoading ? (
+            <Skeleton />
+          ) : members.length === 0 ? (
             <EmptyState
               title="Añade tu primer socio"
               message="Esta entidad aún no tiene socios. Crea el primero para empezar a gestionar cuotas."
@@ -195,6 +204,7 @@ export default function SociosPage() {
           )}
         </Card>
       )}
+      {!selectedMemberId && <Pagination meta={membersQuery.data?.meta} onPage={setPage} />}
     </div>
   );
 }

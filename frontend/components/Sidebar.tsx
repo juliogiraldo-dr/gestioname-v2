@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { useBranding } from "@/lib/branding";
-import { CalendarIcon, ClockIcon, DocIcon, HomeIcon, LeaveIcon, NewsIcon } from "./icons";
+import { BuildingIcon, CalendarIcon, ClockIcon, DocIcon, HomeIcon, LeaveIcon, NewsIcon, UsersIcon } from "./icons";
 
 export type NavItem = {
   href: string;
@@ -14,9 +14,11 @@ export type NavItem = {
 
 const PORTAL_NAV: NavItem[] = [
   { href: "/portal", label: "Inicio", icon: HomeIcon },
+  { href: "/portal/datos", label: "Mis datos", icon: UsersIcon },
   { href: "/portal/fichajes", label: "Mis fichajes", icon: ClockIcon },
   { href: "/portal/horario", label: "Mi horario", icon: CalendarIcon },
   { href: "/portal/ausencias", label: "Ausencias", icon: LeaveIcon },
+  { href: "/portal/laboral", label: "Datos laborales", icon: BuildingIcon },
   { href: "/portal/nominas", label: "Mis nóminas", icon: DocIcon },
   { href: "/portal/documentos", label: "Documentos", icon: DocIcon },
   { href: "/portal/noticias", label: "Noticias", icon: NewsIcon },

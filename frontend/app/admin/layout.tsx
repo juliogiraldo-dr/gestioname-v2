@@ -16,6 +16,7 @@ import {
   EuroIcon,
   HomeIcon,
   LeaveIcon,
+  NewsIcon,
   SettingsIcon,
   UsersIcon,
 } from "@/components/icons";
@@ -36,6 +37,7 @@ const ALL_NAV: GatedNavItem[] = [
   { href: "/admin/socios", label: "Socios", icon: UsersIcon, module: "socios" },
   { href: "/admin/tesoreria", label: "Tesorería", icon: EuroIcon, module: "tesoreria" },
   { href: "/admin/informes", label: "Informes", icon: ChartIcon, module: "rrhh" },
+  { href: "/admin/comunicaciones", label: "Comunicaciones", icon: NewsIcon },
   { href: "/admin/suscripcion", label: "Suscripción", icon: EuroIcon },
 ];
 

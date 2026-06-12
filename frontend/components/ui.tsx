@@ -207,6 +207,32 @@ export function FormSection({ title, children }: { title: string; children: Reac
   );
 }
 
+/** Metadatos de una colección paginada de Laravel (XResource::collection). */
+export type PageMeta = { current_page: number; last_page: number; total: number; per_page: number };
+
+/** Respuesta paginada estándar de la API (data + meta). */
+export type Paginated<T> = { data: T[]; meta: PageMeta };
+
+/** Controles Anterior/Siguiente para listados paginados en servidor (20/página). */
+export function Pagination({ meta, onPage }: { meta?: PageMeta; onPage: (page: number) => void }) {
+  if (!meta || meta.last_page <= 1) return null;
+  return (
+    <div className="mt-4 flex items-center justify-between text-sm">
+      <span className="text-ink-soft">
+        Página {meta.current_page} de {meta.last_page} · {meta.total} registros
+      </span>
+      <div className="flex gap-2">
+        <Button variant="ghost" disabled={meta.current_page <= 1} onClick={() => onPage(meta.current_page - 1)}>
+          Anterior
+        </Button>
+        <Button variant="ghost" disabled={meta.current_page >= meta.last_page} onClick={() => onPage(meta.current_page + 1)}>
+          Siguiente
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** Placeholder de carga (skeleton) para listados. */
 export function Skeleton({ rows = 5 }: { rows?: number }) {
   return (

@@ -41,9 +41,17 @@ class MeController extends Controller
                 'employee' => $employee === null ? null : [
                     'id' => $employee->id,
                     'full_name' => $employee->fullName(),
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
                     'company_id' => $employee->company_id,
                     'work_center_id' => $employee->work_center_id,
                     'job_position' => $employee->job_position,
+                    'phone_personal' => $employee->phone_personal,
+                    'address' => $employee->address,
+                    'postal_code' => $employee->postal_code,
+                    'city' => $employee->city,
+                    'province' => $employee->province,
+                    'has_avatar' => $employee->photo_path !== null,
                 ],
             ],
         ]);
@@ -168,6 +176,90 @@ class MeController extends Controller
         abort_unless(Storage::exists($payslip->file_path), 404);
 
         return Storage::download($payslip->file_path, $payslip->original_name);
+    }
+
+    /** Datos editables por el propio empleado (contacto). No toca datos sensibles ni laborales. */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $data = $request->validate([
+            'first_name' => ['sometimes', 'string', 'max:120'],
+            'last_name' => ['sometimes', 'string', 'max:120'],
+            'phone_personal' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'province' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $employee->update($data);
+
+        return response()->json(['data' => [
+            'first_name' => $employee->first_name,
+            'last_name' => $employee->last_name,
+            'phone_personal' => $employee->phone_personal,
+            'address' => $employee->address,
+            'postal_code' => $employee->postal_code,
+            'city' => $employee->city,
+            'province' => $employee->province,
+        ]]);
+    }
+
+    /** Sube/reemplaza la foto de avatar del propio empleado. */
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $request->validate(['file' => ['required', 'image', 'max:4096', 'mimes:jpg,jpeg,png,webp']]);
+
+        if ($employee->photo_path) {
+            Storage::delete($employee->photo_path);
+        }
+        $path = $request->file('file')->store("avatars/{$employee->id}");
+        $employee->update(['photo_path' => $path]);
+
+        return response()->json(['message' => 'Foto actualizada.']);
+    }
+
+    /** Devuelve la foto de avatar del propio empleado (stream autenticado). */
+    public function avatar(Request $request): StreamedResponse
+    {
+        $employee = $this->employee($request);
+        abort_if($employee->photo_path === null || ! Storage::exists($employee->photo_path), 404);
+
+        return Storage::response($employee->photo_path);
+    }
+
+    /** Datos laborales del empleado: contrato, convenio y horario asignado (solo lectura). */
+    public function laborData(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+        $employee->loadMissing(['company', 'workCenter', 'agreement']);
+        $year = (int) now()->year;
+        $calendar = $employee->calendars()->where('year', $year)->first();
+
+        return response()->json(['data' => [
+            'contract' => [
+                'company' => $employee->company?->name,
+                'work_center' => $employee->workCenter?->name,
+                'department' => $employee->department,
+                'job_position' => $employee->job_position,
+                'job_category' => $employee->job_category,
+                'employment_status' => $employee->employment_status,
+                'hire_date' => $employee->hire_date?->toDateString(),
+            ],
+            'agreement' => $employee->agreement === null ? null : [
+                'name' => $employee->agreement->name,
+                'annual_hours' => $employee->agreement->annual_hours,
+                'vacation_days' => $employee->agreement->vacation_days,
+                'vacation_type' => $employee->agreement->vacation_type,
+            ],
+            'schedule' => $calendar === null ? null : [
+                'year' => $year,
+                'calendar' => $calendar->name,
+            ],
+        ]]);
     }
 
     /**

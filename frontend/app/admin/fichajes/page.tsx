@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
 import { Badge, Button, Card, Modal, PageHeader, SelectField, Spinner, TextField } from "@/components/ui";
@@ -23,11 +24,10 @@ export default function FichajesPage() {
   const [centers, setCenters] = useState<WorkCenter[]>([]);
   const [centerId, setCenterId] = useState("");
   const [date, setDate] = useState(today);
-  const [rows, setRows] = useState<Attendance[]>([]);
   const [employees, setEmployees] = useState<{ id: string }[]>([]);
-  const [loading, setLoading] = useState(false);
   const [correcting, setCorrecting] = useState<Attendance | null>(null);
   const [deleting, setDeleting] = useState<Attendance | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!companyId) return;
@@ -38,20 +38,18 @@ export default function FichajesPage() {
     })();
   }, [companyId]);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    setLoading(true);
-    try {
+  const query = useQuery({
+    queryKey: ["fichajes", date, companyId, centerId],
+    enabled: !!companyId,
+    queryFn: () => {
       const body: Record<string, string> = { date, format: "json", company_id: companyId };
       if (centerId) body.work_center_id = centerId;
-      const res = await api<{ data: Attendance[] }>("/reports/daily-attendance", { method: "POST", body });
-      setRows(res.data);
-    } finally {
-      setLoading(false);
-    }
-  }, [companyId, centerId, date]);
-
-  useEffect(() => { void (async () => { await load(); })(); }, [load]);
+      return api<{ data: Attendance[] }>("/reports/daily-attendance", { method: "POST", body });
+    },
+  });
+  const rows = useMemo(() => query.data?.data ?? [], [query.data]);
+  const loading = query.isLoading;
+  const refresh = useCallback(() => { void queryClient.invalidateQueries({ queryKey: ["fichajes"] }); }, [queryClient]);
 
   useEffect(() => {
     if (!companyId) return;
@@ -127,8 +125,8 @@ export default function FichajesPage() {
         </>
       )}
 
-      {correcting && <CorrectModal attendance={correcting} onClose={() => setCorrecting(null)} onDone={() => { setCorrecting(null); void load(); }} />}
-      {deleting && <DeleteModal attendance={deleting} onClose={() => setDeleting(null)} onDone={() => { setDeleting(null); void load(); }} />}
+      {correcting && <CorrectModal attendance={correcting} onClose={() => setCorrecting(null)} onDone={() => { setCorrecting(null); refresh(); }} />}
+      {deleting && <DeleteModal attendance={deleting} onClose={() => setDeleting(null)} onDone={() => { setDeleting(null); refresh(); }} />}
     </div>
   );
 }

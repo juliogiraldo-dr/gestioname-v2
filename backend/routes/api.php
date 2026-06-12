@@ -7,6 +7,7 @@ use App\Http\Controllers\AgreementLeaveTypeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BrandingController;
+use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyGroupController;
 use App\Http\Controllers\Employee\EmployeeBehaviorController;
@@ -217,6 +218,10 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('vacations', [MeController::class, 'vacations']);
         Route::get('payslips', [MeController::class, 'payslips']);
         Route::get('payslips/{payslip}/download', [MeController::class, 'downloadPayslip']);
+        Route::put('profile', [MeController::class, 'updateProfile']);
+        Route::post('avatar', [MeController::class, 'uploadAvatar']);
+        Route::get('avatar', [MeController::class, 'avatar']);
+        Route::get('labor', [MeController::class, 'laborData']);
     });
 
     // Organigrama (gestores).
@@ -287,6 +292,17 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('entities/{entity}/members/export', [SocioToolsController::class, 'export']);
         Route::get('entities/{entity}/backup', [SocioToolsController::class, 'backupExport']);
         Route::post('entities/backup/import', [SocioToolsController::class, 'backupImport']);
+    });
+
+    // Comunicaciones: email masivo a socios/empleados, historial y recordatorios de cuota.
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin'])->group(function () {
+        Route::get('entities/{entity}/communications/preview-socios', [ComunicacionesController::class, 'previewSocios']);
+        Route::post('entities/{entity}/communications/socios', [ComunicacionesController::class, 'sendSocios']);
+        Route::get('communications/preview-empleados', [ComunicacionesController::class, 'previewEmpleados']);
+        Route::post('communications/empleados', [ComunicacionesController::class, 'sendEmpleados']);
+        Route::get('communications', [ComunicacionesController::class, 'history']);
+        Route::get('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderShow']);
+        Route::put('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderUpdate']);
     });
 
     // Panel super-admin (operador Datarecover). Opera sobre datos del schema public.
