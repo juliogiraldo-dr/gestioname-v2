@@ -172,7 +172,7 @@
   dashboard con gráficas, número de plantillas de config por tipo de entidad. (Eventos → Fase 2, Sprint 15-16.)
 
 ### Sprint 11-12 — Beta interna + pulido (semanas 21-24)
-- [ ] Despliegue en producción con datos reales Datarecover
+- [x] **Despliegue en producción** (plataforma Datarecover, proyecto `gestioname`): PostgreSQL 16 + Redis 7 + backend (Laravel, `php artisan serve`) + worker + scheduler + frontend (Next standalone), todo en un compose desde imágenes públicas de GHCR (`ghcr.io/juliogiraldo-dr/gestioname-{backend,frontend}`). El frontend reescribe `/api` y `/health` al backend (un solo host). Migración + seed (planes + superadmin + demo) en el arranque. **`GET /health → {status: ok}`** verificado; login demo OK. URL: `https://test-julio-gestioname-app.deploy.datarecover.cloud` (multi-tenant por cabecera `X-Tenant-ID`; pendiente dominio propio `*.gestioname.app` con wildcard DNS).
 - [ ] Prueba de uso interno durante 4 semanas
 - [ ] Lista de bugs y mejoras recogida del equipo
 - [ ] Corrección de bugs críticos y bloqueantes
