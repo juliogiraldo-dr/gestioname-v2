@@ -120,4 +120,16 @@ class Employee extends Model
     {
         return $this->hasMany(EmployeeDocument::class);
     }
+
+    /** @return HasMany<Payslip, $this> */
+    public function payslips(): HasMany
+    {
+        return $this->hasMany(Payslip::class);
+    }
+
+    /** Email de contacto del empleado (personal con preferencia, si no el de empresa). */
+    public function contactEmail(): ?string
+    {
+        return $this->email_personal ?: $this->email_company;
+    }
 }

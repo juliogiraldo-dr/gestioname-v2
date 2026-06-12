@@ -46,23 +46,33 @@ class TenantDemoSeeder extends Seeder
         ]);
 
         $this->ensureSuperAdmin();
+        $this->ensureRoleUser('gestoria@demo.gestioname.app', 'Gestoría', 'gestoria');
 
-        $this->command?->info('Demo: admin@demo.gestioname.app / password · superadmin@demo.gestioname.app / password');
+        $this->command?->info('Demo: admin@demo.gestioname.app / password · superadmin@demo.gestioname.app / password · gestoria@demo.gestioname.app / password');
     }
 
     /** Crea el usuario super-admin del tenant demo (dentro de su schema). */
     private function ensureSuperAdmin(): void
     {
+        $this->ensureRoleUser('superadmin@demo.gestioname.app', 'Super Admin', 'super-admin');
+    }
+
+    /** Crea (idempotente) un usuario del tenant demo con un rol dado, dentro de su schema. */
+    private function ensureRoleUser(string $email, string $name, string $role): void
+    {
         TenantSchema::use(self::SUBDOMAIN);
 
         try {
+            // Garantiza que el rol existe en el schema (tenants provisionados antes de añadirlo).
+            (new RoleSeeder)->run();
+
             $user = User::query()->firstOrCreate(
-                ['email' => 'superadmin@demo.gestioname.app'],
-                ['name' => 'Super Admin', 'password' => 'password', 'email_verified_at' => Carbon::now()],
+                ['email' => $email],
+                ['name' => $name, 'password' => 'password', 'email_verified_at' => Carbon::now()],
             );
 
-            if (! $user->hasRole('super-admin')) {
-                $user->assignRole('super-admin');
+            if (! $user->hasRole($role)) {
+                $user->assignRole($role);
             }
         } finally {
             TenantSchema::usePublic();

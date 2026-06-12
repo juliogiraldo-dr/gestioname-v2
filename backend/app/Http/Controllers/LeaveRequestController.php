@@ -27,7 +27,7 @@ class LeaveRequestController extends Controller
             ->when($request->filled('date_to'), fn ($q) => $q->where('date_end', '<=', $request->string('date_to')))
             ->with('employee')
             ->orderByDesc('date_start')
-            ->paginate();
+            ->paginate(20);
 
         return LeaveRequestResource::collection($requests);
     }

@@ -41,7 +41,7 @@ class EmployeeController extends Controller
             ->when($request->has('active'), fn ($q) => $q->where('active', $request->boolean('active')))
             ->with(['workCenter', 'agreement'])
             ->orderBy('last_name')
-            ->paginate();
+            ->paginate(20);
 
         return EmployeeResource::collection($employees);
     }

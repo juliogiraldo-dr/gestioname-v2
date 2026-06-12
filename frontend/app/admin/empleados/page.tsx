@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, downloadFile, uploadFile } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
 import { useToast } from "@/lib/toast";
-import { Avatar, Badge, Button, Card, EmptyState, Modal, PageHeader, SelectField, Skeleton, Spinner, TextField } from "@/components/ui";
+import { Avatar, Badge, Button, Card, EmptyState, Modal, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, TextField } from "@/components/ui";
 
 type Company = { id: string; name: string };
 type Employee = {
@@ -24,27 +25,29 @@ export default function EmpleadosPage() {
   const company = useActiveCompany();
   const companies = company?.companies ?? [];
   const companyId = company?.activeId ?? "";
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const queryClient = useQueryClient();
   const [department, setDepartment] = useState("");
   const [estado, setEstado] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const [modal, setModal] = useState<"create" | "invite" | null>(null);
 
-  const load = useCallback(async () => {
-    if (!companyId) return;
-    const params = new URLSearchParams({ company_id: companyId });
-    if (department) params.set("department", department);
-    if (estado) params.set("active", estado);
-    const res = await api<{ data: Employee[] }>(`/employees?${params}`);
-    setEmployees(res.data);
-    setLoading(false);
-  }, [companyId, department, estado]);
+  const query = useQuery({
+    queryKey: ["employees", companyId, department, estado, page],
+    enabled: !!companyId,
+    queryFn: () => {
+      const params = new URLSearchParams({ company_id: companyId, page: String(page) });
+      if (department) params.set("department", department);
+      if (estado) params.set("active", estado);
+      return api<Paginated<Employee>>(`/employees?${params}`);
+    },
+  });
 
-  useEffect(() => { void (async () => { await load(); })(); }, [load]);
+  const refresh = useCallback(() => { void queryClient.invalidateQueries({ queryKey: ["employees"] }); }, [queryClient]);
+  const employees = query.data?.data ?? [];
 
   if (selected) {
-    return <EmployeeDetail employeeId={selected} companies={companies} onBack={() => setSelected(null)} onChanged={load} />;
+    return <EmployeeDetail employeeId={selected} companies={companies} onBack={() => setSelected(null)} onChanged={refresh} />;
   }
 
   if (company && companies.length === 0) {
@@ -72,13 +75,13 @@ export default function EmpleadosPage() {
 
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <SelectField label="Estado" value={estado} onChange={setEstado} options={ESTADOS} />
-          <TextField label="Departamento" value={department} onChange={setDepartment} placeholder="Exacto" />
+          <SelectField label="Estado" value={estado} onChange={(v) => { setEstado(v); setPage(1); }} options={ESTADOS} />
+          <TextField label="Departamento" value={department} onChange={(v) => { setDepartment(v); setPage(1); }} placeholder="Exacto" />
         </div>
       </Card>
 
       <Card className="overflow-hidden">
-        {loading ? <Skeleton /> : employees.length === 0 ? (
+        {query.isLoading ? <Skeleton /> : employees.length === 0 ? (
           <EmptyState
             title="Añade tu primer empleado"
             message="No hay empleados con estos criterios. Da de alta uno nuevo o invítalo por email."
@@ -110,8 +113,10 @@ export default function EmpleadosPage() {
         )}
       </Card>
 
-      {modal === "create" && <CreateEmployee companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); void load(); }} />}
-      {modal === "invite" && <InviteEmployee companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); void load(); }} />}
+      <Pagination meta={query.data?.meta} onPage={setPage} />
+
+      {modal === "create" && <CreateEmployee companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); refresh(); }} />}
+      {modal === "invite" && <InviteEmployee companies={companies} onClose={() => setModal(null)} onSaved={() => { setModal(null); refresh(); }} />}
     </div>
   );
 }
@@ -224,7 +229,7 @@ const LABORAL_FIELDS: ReadonlyArray<readonly [string, string, string?]> = [
   ["email_company", "Email empresa"], ["phone_company", "Teléfono empresa"],
 ];
 
-function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employeeId: string; companies: Company[]; onBack: () => void; onChanged: () => Promise<void> }) {
+function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employeeId: string; companies: Company[]; onBack: () => void; onChanged: () => void }) {
   const [emp, setEmp] = useState<FullEmployee | null>(null);
   const [centers, setCenters] = useState<WorkCenter[]>([]);
   const [agreements, setAgreements] = useState<Agreement[]>([]);
@@ -260,7 +265,7 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
       payload.agreement_id = emp.agreement_id ?? null;
       await api(`/employees/${employeeId}`, { method: "PUT", body: payload });
       toast.success("Cambios guardados.");
-      await onChanged();
+      onChanged();
       await load();
     } catch (e) { setError(e instanceof ApiError ? e.message : "No se pudo guardar"); } finally { setSaving(false); }
   }
@@ -269,7 +274,7 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
     if (!emp) return;
     await api(`/employees/${employeeId}/${emp.active ? "deactivate" : "activate"}`, { method: "PATCH" });
     toast.info(emp.active ? "Empleado desactivado." : "Empleado activado.");
-    await onChanged();
+    onChanged();
     await load();
   }
 

@@ -33,7 +33,7 @@ class MemberController extends Controller
             ->with('memberType')
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->paginate();
+            ->paginate(20);
 
         return MemberResource::collection($members);
     }

@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth";
 import { BrandingProvider } from "@/lib/branding";
 import { ToastProvider } from "@/lib/toast";
 import { ConfirmProvider } from "@/lib/confirm";
+import { QueryProvider } from "@/lib/query";
 import { GlobalApiEvents } from "@/components/GlobalApiEvents";
 
 export const metadata: Metadata = {
@@ -15,16 +16,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="es" className="h-full">
       <body className="min-h-full">
-        <ToastProvider>
-          <ConfirmProvider>
-            <BrandingProvider>
-              <AuthProvider>
-                <GlobalApiEvents />
-                {children}
-              </AuthProvider>
-            </BrandingProvider>
-          </ConfirmProvider>
-        </ToastProvider>
+        <QueryProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <BrandingProvider>
+                <AuthProvider>
+                  <GlobalApiEvents />
+                  {children}
+                </AuthProvider>
+              </BrandingProvider>
+            </ConfirmProvider>
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

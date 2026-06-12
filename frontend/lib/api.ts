@@ -142,6 +142,25 @@ export async function uploadFile<T = unknown>(
 }
 
 /**
+ * Obtiene un recurso binario autenticado (p. ej. el avatar) como object URL para
+ * mostrarlo en un <img>. Devuelve null si no existe (404) o falla. El llamante debe
+ * liberar la URL con URL.revokeObjectURL cuando deje de usarla.
+ */
+export async function fetchBlobUrl(path: string): Promise<string | null> {
+  const headers: Record<string, string> = { Accept: "*/*", ...tenantHeaders() };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const res = await timedFetch(`${BASE}${path}`, { method: "GET", headers });
+    if (!res.ok) return null;
+    return window.URL.createObjectURL(await res.blob());
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Descarga un fichero binario (Excel/PDF/ZIP) de un endpoint que responde con
  * `Content-Disposition: attachment`. Lanza un guardado en el navegador.
  */

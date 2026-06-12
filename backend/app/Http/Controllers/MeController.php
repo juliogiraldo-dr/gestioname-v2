@@ -10,10 +10,13 @@ use App\Http\Resources\LeaveRequestResource;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\Payslip;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Portal del empleado (prefijo /me). Opera siempre sobre el empleado vinculado al
@@ -38,9 +41,17 @@ class MeController extends Controller
                 'employee' => $employee === null ? null : [
                     'id' => $employee->id,
                     'full_name' => $employee->fullName(),
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
                     'company_id' => $employee->company_id,
                     'work_center_id' => $employee->work_center_id,
                     'job_position' => $employee->job_position,
+                    'phone_personal' => $employee->phone_personal,
+                    'address' => $employee->address,
+                    'postal_code' => $employee->postal_code,
+                    'city' => $employee->city,
+                    'province' => $employee->province,
+                    'has_avatar' => $employee->photo_path !== null,
                 ],
             ],
         ]);
@@ -136,6 +147,119 @@ class MeController extends Controller
         $year = $request->integer('year') ?: (int) now()->year;
 
         return response()->json(['data' => $this->leave->vacationSummary($employee, $year)]);
+    }
+
+    /** Nóminas del empleado autenticado (sin el fichero; la descarga es aparte). */
+    public function payslips(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $payslips = $employee->payslips()
+            ->orderByDesc('year')->orderByDesc('month')
+            ->get()
+            ->map(fn (Payslip $p) => [
+                'id' => $p->id,
+                'month' => $p->month,
+                'year' => $p->year,
+                'period' => $p->periodLabel(),
+                'created_at' => $p->created_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['data' => $payslips]);
+    }
+
+    /** Descarga de una nómina propia (comprueba la propiedad). */
+    public function downloadPayslip(Request $request, Payslip $payslip): StreamedResponse
+    {
+        $employee = $this->employee($request);
+        abort_unless($payslip->employee_id === $employee->id, 403);
+        abort_unless(Storage::exists($payslip->file_path), 404);
+
+        return Storage::download($payslip->file_path, $payslip->original_name);
+    }
+
+    /** Datos editables por el propio empleado (contacto). No toca datos sensibles ni laborales. */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $data = $request->validate([
+            'first_name' => ['sometimes', 'string', 'max:120'],
+            'last_name' => ['sometimes', 'string', 'max:120'],
+            'phone_personal' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['nullable', 'string', 'max:10'],
+            'city' => ['nullable', 'string', 'max:120'],
+            'province' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $employee->update($data);
+
+        return response()->json(['data' => [
+            'first_name' => $employee->first_name,
+            'last_name' => $employee->last_name,
+            'phone_personal' => $employee->phone_personal,
+            'address' => $employee->address,
+            'postal_code' => $employee->postal_code,
+            'city' => $employee->city,
+            'province' => $employee->province,
+        ]]);
+    }
+
+    /** Sube/reemplaza la foto de avatar del propio empleado. */
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $request->validate(['file' => ['required', 'image', 'max:4096', 'mimes:jpg,jpeg,png,webp']]);
+
+        if ($employee->photo_path) {
+            Storage::delete($employee->photo_path);
+        }
+        $path = $request->file('file')->store("avatars/{$employee->id}");
+        $employee->update(['photo_path' => $path]);
+
+        return response()->json(['message' => 'Foto actualizada.']);
+    }
+
+    /** Devuelve la foto de avatar del propio empleado (stream autenticado). */
+    public function avatar(Request $request): StreamedResponse
+    {
+        $employee = $this->employee($request);
+        abort_if($employee->photo_path === null || ! Storage::exists($employee->photo_path), 404);
+
+        return Storage::response($employee->photo_path);
+    }
+
+    /** Datos laborales del empleado: contrato, convenio y horario asignado (solo lectura). */
+    public function laborData(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+        $employee->loadMissing(['company', 'workCenter', 'agreement']);
+        $year = (int) now()->year;
+        $calendar = $employee->calendars()->where('year', $year)->first();
+
+        return response()->json(['data' => [
+            'contract' => [
+                'company' => $employee->company?->name,
+                'work_center' => $employee->workCenter?->name,
+                'department' => $employee->department,
+                'job_position' => $employee->job_position,
+                'job_category' => $employee->job_category,
+                'employment_status' => $employee->employment_status,
+                'hire_date' => $employee->hire_date?->toDateString(),
+            ],
+            'agreement' => $employee->agreement === null ? null : [
+                'name' => $employee->agreement->name,
+                'annual_hours' => $employee->agreement->annual_hours,
+                'vacation_days' => $employee->agreement->vacation_days,
+                'vacation_type' => $employee->agreement->vacation_type,
+            ],
+            'schedule' => $calendar === null ? null : [
+                'year' => $year,
+                'calendar' => $calendar->name,
+            ],
+        ]]);
     }
 
     /**

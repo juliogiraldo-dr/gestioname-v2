@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
-import { Badge, Button, Card, Modal, PageHeader, SelectField, Spinner, StatCard, TextField } from "@/components/ui";
+import { Badge, Button, Card, Modal, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, StatCard, TextField } from "@/components/ui";
 
 type Employee = { id: string; full_name: string };
 type LeaveRequest = {
@@ -47,18 +48,20 @@ function rangeLabel(r: LeaveRequest) {
 }
 
 function Pendientes() {
-  const [rows, setRows] = useState<LeaveRequest[] | null>(null);
   const [rejecting, setRejecting] = useState<LeaveRequest | null>(null);
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    const res = await api<{ data: LeaveRequest[] }>("/leave-requests/pending");
-    setRows(res.data);
-  }, []);
-  useEffect(() => { void (async () => { await load(); })(); }, [load]);
+  const query = useQuery({
+    queryKey: ["leave-requests", "pending"],
+    queryFn: () => api<{ data: LeaveRequest[] }>("/leave-requests/pending"),
+  });
+  const rows = query.data?.data ?? null;
 
-  async function approve(id: string) { await api(`/leave-requests/${id}/approve`, { method: "POST" }); await load(); }
+  const refresh = useCallback(() => { void queryClient.invalidateQueries({ queryKey: ["leave-requests"] }); }, [queryClient]);
 
-  if (!rows) return <Spinner />;
+  async function approve(id: string) { await api(`/leave-requests/${id}/approve`, { method: "POST" }); refresh(); }
+
+  if (query.isLoading || !rows) return <Spinner />;
   if (rows.length === 0) return <Card className="p-8 text-center"><p className="text-sm text-ink-soft">No hay solicitudes pendientes. 🎉</p></Card>;
 
   return (
@@ -75,7 +78,7 @@ function Pendientes() {
           </div>
         </Card>
       ))}
-      {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} onDone={() => { setRejecting(null); void load(); }} />}
+      {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} onDone={() => { setRejecting(null); refresh(); }} />}
     </div>
   );
 }
@@ -110,28 +113,30 @@ function Listado() {
   const [from, setFrom] = useState(`${month}-01`);
   const [to, setTo] = useState(`${month}-31`);
   const [status, setStatus] = useState("");
-  const [rows, setRows] = useState<LeaveRequest[] | null>(null);
+  const [page, setPage] = useState(1);
 
-  const load = useCallback(async () => {
-    const params = new URLSearchParams({ date_from: from, date_to: to });
-    if (status) params.set("status", status);
-    const res = await api<{ data: LeaveRequest[] }>(`/leave-requests?${params}`);
-    setRows(res.data);
-  }, [from, to, status]);
-  useEffect(() => { void (async () => { await load(); })(); }, [load]);
+  const query = useQuery({
+    queryKey: ["leave-requests", "list", from, to, status, page],
+    queryFn: () => {
+      const params = new URLSearchParams({ date_from: from, date_to: to, page: String(page) });
+      if (status) params.set("status", status);
+      return api<Paginated<LeaveRequest>>(`/leave-requests?${params}`);
+    },
+  });
+  const rows = query.data?.data ?? [];
 
   return (
     <div className="space-y-4">
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <TextField label="Desde" type="date" value={from} onChange={setFrom} />
-          <TextField label="Hasta" type="date" value={to} onChange={setTo} />
-          <SelectField label="Estado" value={status} onChange={setStatus}
+          <TextField label="Desde" type="date" value={from} onChange={(v) => { setFrom(v); setPage(1); }} />
+          <TextField label="Hasta" type="date" value={to} onChange={(v) => { setTo(v); setPage(1); }} />
+          <SelectField label="Estado" value={status} onChange={(v) => { setStatus(v); setPage(1); }}
             options={[["", "Todos"], ["pendiente", "Pendientes"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"]]} />
         </div>
       </Card>
       <Card className="overflow-hidden">
-        {!rows ? <Spinner /> : rows.length === 0 ? <p className="p-6 text-sm text-ink-soft">Sin solicitudes en el rango.</p> : (
+        {query.isLoading ? <Skeleton /> : rows.length === 0 ? <p className="p-6 text-sm text-ink-soft">Sin solicitudes en el rango.</p> : (
           <table className="w-full text-sm">
             <thead className="border-b border-line bg-canvas text-left text-xs uppercase tracking-wide text-ink-soft">
               <tr><th className="px-5 py-3 font-medium">Empleado</th><th className="px-5 py-3 font-medium">Periodo</th><th className="px-5 py-3 font-medium">Estado</th></tr>
@@ -148,6 +153,7 @@ function Listado() {
           </table>
         )}
       </Card>
+      <Pagination meta={query.data?.meta} onPage={setPage} />
     </div>
   );
 }

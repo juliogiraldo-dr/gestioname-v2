@@ -7,6 +7,7 @@ use App\Http\Controllers\AgreementLeaveTypeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BrandingController;
+use App\Http\Controllers\ComunicacionesController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CompanyGroupController;
 use App\Http\Controllers\Employee\EmployeeBehaviorController;
@@ -14,9 +15,12 @@ use App\Http\Controllers\Employee\EmployeeDocumentController;
 use App\Http\Controllers\Employee\EmployeeMaterialController;
 use App\Http\Controllers\Employee\EmployeeQualificationController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\Gestoria\DownloadTokenController;
+use App\Http\Controllers\Gestoria\PayslipController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\MeController;
+use App\Http\Controllers\PublicDownloadController;
 use App\Http\Controllers\MilestoneController;
 use App\Http\Controllers\OrgChartController;
 use App\Http\Controllers\RegisterController;
@@ -77,6 +81,9 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
     // Branding del tenant: público (el frontend lo aplica antes de autenticar).
     Route::get('branding', [BrandingController::class, 'show']);
 
+    // Zona pública de descarga: enlace de un solo uso (72 h), sin login.
+    Route::get('download/{token}', [PublicDownloadController::class, 'show'])->middleware('throttle:60,1');
+
     // Fichaje por PIN: público dentro del tenant (kiosk/web/móvil sin sesión).
     Route::post('attendance/identify', [AttendanceController::class, 'identify'])->middleware('throttle:60,1');
     Route::post('attendance/clock', [AttendanceController::class, 'clock'])->middleware('throttle:60,1');
@@ -88,11 +95,26 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('attendance/{attendance}/corrections', [AttendanceController::class, 'corrections']);
         Route::put('attendance/{attendance}', [AttendanceController::class, 'correct']);
         Route::delete('attendance/{attendance}', [AttendanceController::class, 'destroy']);
+    });
 
-        // Informes (Sprint 8). Registro horario ET 34.9, diario y resumen de ausencias.
+    // Informes (Sprint 8). Registro horario ET 34.9, diario y resumen de ausencias.
+    // La gestoría también puede consultarlos (no modifica fichajes ni empleados).
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin|rrhh-coordinator|gestoria'])->group(function () {
         Route::post('reports/work-time-record', [ReportsController::class, 'workTimeRecord']);
         Route::post('reports/daily-attendance', [ReportsController::class, 'dailyAttendance']);
         Route::post('reports/leave-summary', [ReportsController::class, 'leaveSummary']);
+    });
+
+    // Panel de gestoría: nóminas y enlaces de descarga (admin + gestoría).
+    // Sin acceso a datos sensibles (DNI/IBAN), ni a modificar empleados/fichajes/configuración.
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin|gestoria'])->group(function () {
+        Route::get('payslips', [PayslipController::class, 'index']);
+        Route::post('employees/{employee}/payslips', [PayslipController::class, 'store']);
+        Route::get('payslips/{payslip}/download', [PayslipController::class, 'download']);
+        Route::delete('payslips/{payslip}', [PayslipController::class, 'destroy']);
+
+        Route::get('download-tokens', [DownloadTokenController::class, 'index']);
+        Route::post('download-tokens', [DownloadTokenController::class, 'store']);
     });
 
     // Configuración de empresa: solo administradores del tenant.
@@ -194,6 +216,12 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('leave-requests', [MeController::class, 'leaveRequests']);
         Route::post('leave-requests', [MeController::class, 'storeLeaveRequest']);
         Route::get('vacations', [MeController::class, 'vacations']);
+        Route::get('payslips', [MeController::class, 'payslips']);
+        Route::get('payslips/{payslip}/download', [MeController::class, 'downloadPayslip']);
+        Route::put('profile', [MeController::class, 'updateProfile']);
+        Route::post('avatar', [MeController::class, 'uploadAvatar']);
+        Route::get('avatar', [MeController::class, 'avatar']);
+        Route::get('labor', [MeController::class, 'laborData']);
     });
 
     // Organigrama (gestores).
@@ -264,6 +292,17 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('entities/{entity}/members/export', [SocioToolsController::class, 'export']);
         Route::get('entities/{entity}/backup', [SocioToolsController::class, 'backupExport']);
         Route::post('entities/backup/import', [SocioToolsController::class, 'backupImport']);
+    });
+
+    // Comunicaciones: email masivo a socios/empleados, historial y recordatorios de cuota.
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin'])->group(function () {
+        Route::get('entities/{entity}/communications/preview-socios', [ComunicacionesController::class, 'previewSocios']);
+        Route::post('entities/{entity}/communications/socios', [ComunicacionesController::class, 'sendSocios']);
+        Route::get('communications/preview-empleados', [ComunicacionesController::class, 'previewEmpleados']);
+        Route::post('communications/empleados', [ComunicacionesController::class, 'sendEmpleados']);
+        Route::get('communications', [ComunicacionesController::class, 'history']);
+        Route::get('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderShow']);
+        Route::put('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderUpdate']);
     });
 
     // Panel super-admin (operador Datarecover). Opera sobre datos del schema public.
