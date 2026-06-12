@@ -27,6 +27,9 @@ class RoleSeeder extends Seeder
         'operator',
         'employee',
         'member',
+        // Gestoría externa: nóminas, informes RRHH y descargas. Sin acceso a datos
+        // sensibles (DNI/IBAN) ni a la modificación de empleados, fichajes o configuración.
+        'gestoria',
     ];
 
     public function run(): void

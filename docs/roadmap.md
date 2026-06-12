@@ -188,7 +188,7 @@
 - [ ] Resumen visual ficha empleado (% datos completados)
 - [ ] Exportación masiva fichas empleados a Excel
 - [ ] Gestión de contratos: alertas de vencimiento próximo
-- [ ] Nóminas: subida de PDF por RRHH, notificación al empleado
+- [x] Nóminas: subida de PDF por RRHH/gestoría, notificación automática al empleado (ver «Rol Gestoría» abajo)
 - [ ] Módulo de evaluaciones de rendimiento
 
 ### Sprint 15-16 — Módulo eventos asociaciones
@@ -267,7 +267,14 @@
 - [x] **PDFs** (DomPDF): recibo de pago, ficha de socio, carnet de socio y listado de socios (`SocioPdfService` + vistas Blade). Botones en Socios.
 - [x] **Import/Export Excel**: importar/exportar socios (plantilla + filtros), exportar empleados (import de empleados ya existía). `SocioImportService`, `EmployeeImportService::export`.
 - [x] **Backup JSON** de entidad: exportar/importar entidad completa (tipos, socios, pagos, categorías, gastos) — `EntityBackupService`.
-- [ ] **Pendiente** (requieren módulos nuevos amplios): portal del empleado ampliado (editar perfil/foto, nóminas, ausencias con calendario, datos laborales), `/admin/comunicaciones` (email masivo socios/empleados, recordatorios automáticos de cuota). El portal básico (fichajes, horario, ausencias, documentos) ya existe.
+- [ ] **Pendiente** (requieren módulos nuevos amplios): portal del empleado ampliado (editar perfil/foto, ausencias con calendario, datos laborales), `/admin/comunicaciones` (email masivo socios/empleados, recordatorios automáticos de cuota). El portal básico (fichajes, horario, ausencias, documentos, nóminas) ya existe.
+
+### Bloque D — Rol Gestoría + Zona de descarga ✅
+- [x] **Rol `gestoria`** (Spatie, sembrado por tenant). Puede ver/descargar y subir nóminas, ver informes RRHH y generar enlaces de descarga. **No** ve datos sensibles (DNI/IBAN ocultos en el modelo) ni puede modificar empleados, fichajes o configuración (rutas `role:admin|super-admin`). Usuario demo `gestoria@demo.gestioname.app`.
+- [x] **Módulo Nóminas** (`payslips`): subida de PDF por empleado (mes/año, reemplaza el periodo existente), descarga; aviso automático al empleado por email (`PayslipAvailableNotification`, plantilla `emails/action`). Portal del empleado «Mis nóminas» (`/me/payslips` + descarga con control de propiedad).
+- [x] **Panel `/admin/gestoria`** (admin + gestoría): pestañas Nóminas (listado paginado + subida + generar enlace), Documentos RRHH (enlace a Informes), Exportación a3asesor (placeholder «Disponible en Fase 3»). Navegación reducida para la gestoría (solo Gestoría + Informes).
+- [x] **Zona pública de descarga** (`download_tokens`): `GET /api/v1/download/{token}` sin login, token firmado de un solo uso válido 72 h; la tabla es a la vez registro de descargas (quién generó/cuándo, IP y momento de la descarga). Botón «Generar enlace de descarga» por nómina.
+- [x] Tests: `GestoriaPayslipTest` — 6 verdes (subida+aviso, reemplazo, permisos denegados, informes permitidos, enlace de un solo uso, descarga propia vs ajena).
 
 ### Bloque C — Infraestructura (sin pagos reales)
 - [x] **Emails transaccionales** con plantilla base HTML branded (`emails/action.blade.php`, colores #0F2756/#68DFB9), aplicada al magic link. _Resto de notificaciones pueden migrar a la misma vista._

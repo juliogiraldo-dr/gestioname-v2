@@ -17,6 +17,8 @@ export default function Home() {
     if (loading || !profile) return;
     if (profile.roles.includes("super-admin")) router.replace("/superadmin");
     else if (profile.roles.some((r) => ADMIN_ROLES.includes(r))) router.replace("/admin");
+    // La gestoría externa solo accede a su panel (nóminas/descargas e informes).
+    else if (profile.roles.includes("gestoria")) router.replace("/admin/gestoria");
     else router.replace("/portal");
   }, [loading, profile, router]);
 

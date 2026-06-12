@@ -10,10 +10,13 @@ use App\Http\Resources\LeaveRequestResource;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\Payslip;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Portal del empleado (prefijo /me). Opera siempre sobre el empleado vinculado al
@@ -136,6 +139,35 @@ class MeController extends Controller
         $year = $request->integer('year') ?: (int) now()->year;
 
         return response()->json(['data' => $this->leave->vacationSummary($employee, $year)]);
+    }
+
+    /** Nóminas del empleado autenticado (sin el fichero; la descarga es aparte). */
+    public function payslips(Request $request): JsonResponse
+    {
+        $employee = $this->employee($request);
+
+        $payslips = $employee->payslips()
+            ->orderByDesc('year')->orderByDesc('month')
+            ->get()
+            ->map(fn (Payslip $p) => [
+                'id' => $p->id,
+                'month' => $p->month,
+                'year' => $p->year,
+                'period' => $p->periodLabel(),
+                'created_at' => $p->created_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['data' => $payslips]);
+    }
+
+    /** Descarga de una nómina propia (comprueba la propiedad). */
+    public function downloadPayslip(Request $request, Payslip $payslip): StreamedResponse
+    {
+        $employee = $this->employee($request);
+        abort_unless($payslip->employee_id === $employee->id, 403);
+        abort_unless(Storage::exists($payslip->file_path), 404);
+
+        return Storage::download($payslip->file_path, $payslip->original_name);
     }
 
     /**
