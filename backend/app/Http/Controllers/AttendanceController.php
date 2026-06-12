@@ -32,6 +32,7 @@ class AttendanceController extends Controller
             $request->validated('lng'),
             $request->ip(),
             $request->validated('method') ?? 'kiosk',
+            $request->validated('work_mode'),
         );
 
         return AttendanceResource::make($attendance->load(['employee', 'milestone']))
@@ -47,13 +48,17 @@ class AttendanceController extends Controller
         $employee = Employee::query()
             ->where('clock_code', $request->string('clock_code'))
             ->where('active', true)
+            ->with('workCenter:id,location_required')
             ->first();
 
         if ($employee === null) {
             throw new BusinessException('Código de fichaje no encontrado.', 'INVALID_CLOCK_CODE', 422);
         }
 
-        return response()->json(['data' => ['name' => $employee->fullName()]]);
+        return response()->json(['data' => [
+            'name' => $employee->fullName(),
+            'location_required' => (bool) $employee->workCenter?->location_required,
+        ]]);
     }
 
     /** Informe diario de fichajes por empresa/centro. */

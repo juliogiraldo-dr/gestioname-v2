@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, Modal, PageHeader, Skeleton, StatCard } from "@/components/ui";
 
 type Usage = Record<string, { used: number; limit: number | null }>;
@@ -46,8 +47,8 @@ export default function SuscripcionPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Plan actual" value={sub.plan?.name ?? "—"} hint={sub.plan ? `${eur(sub.plan.price_monthly)}/mes` : undefined} />
-        <StatCard label="Estado del trial" value={sub.trial_days_left != null ? `${sub.trial_days_left} días` : "—"} hint={sub.trial_ends_at ? `hasta ${new Date(sub.trial_ends_at).toLocaleDateString("es-ES")}` : "Sin trial activo"} />
-        <StatCard label="Renovación" value={sub.trial_ends_at ? new Date(sub.trial_ends_at).toLocaleDateString("es-ES") : "Mensual"} />
+        <StatCard label="Estado del trial" value={sub.trial_days_left != null ? `${sub.trial_days_left} días` : "—"} hint={sub.trial_ends_at ? `hasta ${formatDate(sub.trial_ends_at)}` : "Sin trial activo"} />
+        <StatCard label="Renovación" value={sub.trial_ends_at ? formatDate(sub.trial_ends_at) : "Mensual"} />
       </div>
 
       <Card className="p-5">

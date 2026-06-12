@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, uploadFile, downloadFile, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { useDebounce } from "@/lib/hooks";
+import { formatDateTime } from "@/lib/utils";
 import {
   Avatar,
   Badge,
@@ -299,7 +300,7 @@ function UploadModal({
 
 function LinkModal({ data, onClose }: { data: { url: string; expires_at: string }; onClose: () => void }) {
   const toast = useToast();
-  const expires = new Date(data.expires_at).toLocaleString("es-ES");
+  const expires = formatDateTime(data.expires_at);
 
   return (
     <Modal title="Enlace de descarga" onClose={onClose}>

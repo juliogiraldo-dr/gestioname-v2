@@ -32,6 +32,7 @@ class WorkCenter extends Model
         'lat',
         'lng',
         'timezone',
+        'location_required',
     ];
 
     /**
@@ -42,7 +43,14 @@ class WorkCenter extends Model
         return [
             'lat' => 'float',
             'lng' => 'float',
+            'location_required' => 'boolean',
         ];
+    }
+
+    /** @return BelongsToMany<Agreement, $this> */
+    public function agreements(): BelongsToMany
+    {
+        return $this->belongsToMany(Agreement::class, 'work_center_agreements', 'work_center_id', 'agreement_id');
     }
 
     /** @return BelongsTo<Company, $this> */

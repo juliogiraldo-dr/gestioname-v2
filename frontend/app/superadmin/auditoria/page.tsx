@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, PageHeader, Skeleton } from "@/components/ui";
 
 type Audit = {
@@ -54,7 +55,7 @@ export default function AuditoriaPage() {
                   <td className="px-5 py-3 text-ink-soft">{a.actor ?? "—"}</td>
                   <td className="px-5 py-3 text-ink-soft">{a.tenant ?? "—"}</td>
                   <td className="px-5 py-3 text-xs text-ink-soft">{summary(a.details)}</td>
-                  <td className="px-5 py-3 text-xs text-ink-soft">{new Date(a.created_at).toLocaleString("es-ES")}</td>
+                  <td className="px-5 py-3 text-xs text-ink-soft">{formatDateTime(a.created_at)}</td>
                 </tr>
               ))}
             </tbody>

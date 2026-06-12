@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { api, downloadFile } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { Button, Card, EmptyState, PageHeader, Skeleton } from "@/components/ui";
 
 type Payslip = {
@@ -44,7 +45,7 @@ export default function NominasPage() {
                 <p className="font-medium capitalize text-ink">{p.period}</p>
                 {p.created_at && (
                   <p className="text-xs text-ink-soft">
-                    Publicada el {new Date(p.created_at).toLocaleDateString("es-ES")}
+                    Publicada el {formatDate(p.created_at)}
                   </p>
                 )}
               </div>

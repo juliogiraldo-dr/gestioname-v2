@@ -24,6 +24,7 @@ class ClockRequest extends FormRequest
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
             'method' => ['nullable', 'in:web,movil,kiosk'],
+            'work_mode' => ['nullable', 'in:presencial,teletrabajo'],
         ];
     }
 }

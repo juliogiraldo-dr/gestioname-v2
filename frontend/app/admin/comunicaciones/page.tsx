@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
+import { formatDateTime } from "@/lib/utils";
 import {
   Badge,
   Button,
@@ -414,7 +415,7 @@ function History() {
                 <p className="text-xs text-ink-soft">
                   {c.entity ?? (c.audience === "empleados" ? "Empleados" : "Socios")}
                   {c.sent_by ? ` · ${c.sent_by}` : ""}
-                  {c.created_at ? ` · ${new Date(c.created_at).toLocaleString("es-ES")}` : ""}
+                  {c.created_at ? ` · ${formatDateTime(c.created_at)}` : ""}
                 </p>
               </div>
               <div className="flex items-center gap-2">

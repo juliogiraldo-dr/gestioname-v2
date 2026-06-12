@@ -26,7 +26,9 @@ class WorkCenterResource extends JsonResource
             'lat' => $this->lat,
             'lng' => $this->lng,
             'timezone' => $this->timezone,
+            'location_required' => (bool) $this->location_required,
             'milestones' => AttendanceMilestoneResource::collection($this->whenLoaded('milestones')),
+            'agreement_ids' => $this->whenLoaded('agreements', fn () => $this->agreements->pluck('id')->all()),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

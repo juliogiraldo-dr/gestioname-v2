@@ -204,7 +204,7 @@ function InviteEmployee({ companies, onClose, onSaved }: { companies: Company[];
 type FullEmployee = Record<string, unknown> & {
   id: string; first_name: string; last_name: string; full_name: string; active: boolean; company_id: string;
 };
-type WorkCenter = { id: string; name: string };
+type WorkCenter = { id: string; name: string; agreement_ids?: string[] };
 type Agreement = { id: string; name: string };
 
 const TABS = [
@@ -281,6 +281,13 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
   if (!emp) return <Spinner />;
   const companyName = companies.find((c) => c.id === emp.company_id)?.name ?? "";
 
+  // Convenios filtrados por el centro asignado: si el centro tiene convenios vinculados,
+  // solo se ofrecen esos; si no, todos los de la empresa.
+  const centerAgreementIds = centers.find((c) => c.id === emp.work_center_id)?.agreement_ids ?? [];
+  const filteredAgreements = centerAgreementIds.length > 0
+    ? agreements.filter((a) => centerAgreementIds.includes(a.id))
+    : agreements;
+
   return (
     <div className="space-y-4">
       <button onClick={onBack} className="text-sm text-primary hover:underline">← Volver al listado</button>
@@ -316,7 +323,7 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
               <SelectField label="Centro de trabajo" value={str("work_center_id")} onChange={(v) => set("work_center_id", v || null)}
                 options={[["", "Sin asignar"], ...centers.map((c) => [c.id, c.name] as const)]} />
               <SelectField label="Convenio" value={str("agreement_id")} onChange={(v) => set("agreement_id", v || null)}
-                options={[["", "Sin asignar"], ...agreements.map((a) => [a.id, a.name] as const)]} />
+                options={[["", "Sin asignar"], ...filteredAgreements.map((a) => [a.id, a.name] as const)]} />
               <SelectField label="Situación laboral" value={str("employment_status")} onChange={(v) => set("employment_status", v || null)}
                 options={[["", "—"], ["active", "Activo"], ["inactive", "Inactivo"], ["leave", "Baja/Permiso"]]} />
             </div>

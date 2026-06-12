@@ -21,7 +21,7 @@ class TenantBranding extends Model
     protected $table = 'tenant_branding';
 
     /** @var list<string> */
-    protected $fillable = ['tenant_id', 'logo_path', 'primary_color', 'app_name'];
+    protected $fillable = ['tenant_id', 'logo_path', 'logo_file', 'primary_color', 'app_name', 'font'];
 
     /** @return BelongsTo<Tenant, $this> */
     public function tenant(): BelongsTo

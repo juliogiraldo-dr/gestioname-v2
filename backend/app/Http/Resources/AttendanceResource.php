@@ -36,6 +36,7 @@ class AttendanceResource extends JsonResource
             'lng' => $this->lng,
             'ip_address' => $this->ip_address,
             'method' => $this->method,
+            'work_mode' => $this->work_mode,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

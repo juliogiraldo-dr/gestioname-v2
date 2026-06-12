@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
+import { formatTime } from "@/lib/utils";
 import { Badge, Button, Card, Modal, PageHeader, SelectField, Spinner, TextField } from "@/components/ui";
 
 type WorkCenter = { id: string; name: string };
@@ -11,11 +12,13 @@ type Attendance = {
   id: string;
   clocked_at: string;
   method: string;
+  work_mode?: string | null;
   employee?: { id: string; name: string };
   milestone?: { name: string; type: string };
 };
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+const time = (iso: string) => formatTime(iso);
+const MODE_LABEL: Record<string, string> = { presencial: "Oficina", teletrabajo: "Teletrabajo" };
 
 export default function FichajesPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -103,7 +106,7 @@ export default function FichajesPage() {
             {rows.length === 0 ? <p className="p-6 text-sm text-ink-soft">Sin fichajes en la fecha.</p> : (
               <table className="w-full text-sm">
                 <thead className="border-b border-line bg-canvas text-left text-xs uppercase tracking-wide text-ink-soft">
-                  <tr><th className="px-5 py-3 font-medium">Empleado</th><th className="px-5 py-3 font-medium">Hito</th><th className="px-5 py-3 font-medium">Hora</th><th className="px-5 py-3 font-medium">Método</th><th className="px-5 py-3"></th></tr>
+                  <tr><th className="px-5 py-3 font-medium">Empleado</th><th className="px-5 py-3 font-medium">Hito</th><th className="px-5 py-3 font-medium">Hora</th><th className="px-5 py-3 font-medium">Modalidad</th><th className="px-5 py-3 font-medium">Método</th><th className="px-5 py-3"></th></tr>
                 </thead>
                 <tbody className="divide-y divide-line">
                   {rows.map((r) => (
@@ -111,6 +114,7 @@ export default function FichajesPage() {
                       <td className="px-5 py-3 text-ink">{r.employee?.name ?? "—"}</td>
                       <td className="px-5 py-3"><Badge tone={r.milestone?.type === "entrada" ? "ok" : "info"}>{r.milestone?.name ?? "—"}</Badge></td>
                       <td className="px-5 py-3 font-medium text-ink">{time(r.clocked_at)}</td>
+                      <td className="px-5 py-3">{r.work_mode ? <Badge tone={r.work_mode === "teletrabajo" ? "info" : "neutral"}>{MODE_LABEL[r.work_mode] ?? r.work_mode}</Badge> : <span className="text-ink-soft">—</span>}</td>
                       <td className="px-5 py-3 text-ink-soft">{r.method}</td>
                       <td className="px-5 py-3 text-right">
                         <button onClick={() => setCorrecting(r)} className="mr-3 text-xs font-medium text-primary hover:underline">Corregir</button>

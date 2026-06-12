@@ -23,7 +23,7 @@ final class AttendanceService
      *
      * @throws BusinessException INVALID_CLOCK_CODE | IP_NOT_ALLOWED | DOUBLE_ENTRY | NO_OPEN_ENTRY
      */
-    public function clock(string $clockCode, string $milestoneId, ?float $lat, ?float $lng, ?string $ip, string $method = 'kiosk'): Attendance
+    public function clock(string $clockCode, string $milestoneId, ?float $lat, ?float $lng, ?string $ip, string $method = 'kiosk', ?string $workMode = null): Attendance
     {
         $employee = Employee::where('clock_code', $clockCode)->where('active', true)->first();
 
@@ -48,6 +48,7 @@ final class AttendanceService
             'lng' => $lng,
             'ip_address' => $ip,
             'method' => $method,
+            'work_mode' => $workMode,
         ]);
     }
 

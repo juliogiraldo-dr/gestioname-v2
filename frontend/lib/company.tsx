@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 
 export type ActiveCompany = { id: string; name: string };
@@ -21,6 +22,7 @@ const STORAGE_KEY = "gm_active_company";
 export function CompanyProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<ActiveCompany[]>([]);
   const [activeId, setActive] = useState("");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     void (async () => {
@@ -35,6 +37,8 @@ export function CompanyProvider({ children }: { children: React.ReactNode }) {
   function setActiveId(id: string) {
     setActive(id);
     if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, id);
+    // Recarga los listados al cambiar de empresa (los que no cachean por companyId).
+    void queryClient.invalidateQueries();
   }
 
   return <Ctx.Provider value={{ companies, activeId, setActiveId }}>{children}</Ctx.Provider>;

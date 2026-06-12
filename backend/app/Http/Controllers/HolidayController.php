@@ -27,6 +27,14 @@ class HolidayController extends Controller
                 $year = $request->integer('year');
                 $q->where(fn ($sub) => $sub->where('repeatable', true)->orWhereYear('date', $year));
             })
+            // Filtro por empresa: festivos con algún centro de esa empresa, o sin centros
+            // (nacionales: aplican a todas las empresas).
+            ->when($request->filled('company_id'), function ($q) use ($request) {
+                $companyId = $request->string('company_id')->toString();
+                $q->where(fn ($sub) => $sub
+                    ->whereHas('workCenters', fn ($wc) => $wc->where('company_id', $companyId))
+                    ->orDoesntHave('workCenters'));
+            })
             ->with('workCenters')
             ->orderBy('date')
             ->paginate();

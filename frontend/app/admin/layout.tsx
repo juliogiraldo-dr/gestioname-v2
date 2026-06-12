@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { CompanyProvider } from "@/lib/company";
@@ -52,7 +53,6 @@ type Module = { key: string; enabled: boolean };
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useAuth();
   const router = useRouter();
-  const [modules, setModules] = useState<Module[] | null>(null);
   const [navOpen, setNavOpen] = useState(false);
 
   const isFullAdmin = profile?.roles.some((r) => FULL_ADMIN_ROLES.includes(r)) ?? false;
@@ -68,20 +68,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [loading, profile, canEnter, router]);
 
-  useEffect(() => {
-    // Solo los gestores de empresa leen los módulos (la gestoría no tiene ese permiso).
-    if (!isFullAdmin) return;
-    void (async () => {
+  // Módulos activos del tenant (gating del sidebar). Cacheado con React Query: al
+  // activar/desactivar un módulo se invalida ["tenant-modules"] y el sidebar se recarga.
+  const { data: modules } = useQuery({
+    queryKey: ["tenant-modules"],
+    enabled: isFullAdmin,
+    queryFn: async () => {
       try {
-        const res = await api<{ data: Module[] }>("/tenant-modules");
-        setModules(res.data);
+        return (await api<{ data: Module[] }>("/tenant-modules")).data;
       } catch {
-        setModules([]); // ante un fallo, no ocultamos nada crítico
+        return [] as Module[];
       }
-    })();
-  }, [isFullAdmin]);
+    },
+  });
 
-  if (loading || (isFullAdmin && modules === null)) {
+  if (loading || (isFullAdmin && modules === undefined)) {
     return (
       <div className="flex min-h-full items-center justify-center">
         <Spinner />

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, PageHeader, SelectField, Spinner, TextField, Toggle } from "@/components/ui";
 
 type Tenant = {
@@ -19,7 +20,7 @@ type Audit = { id: number; action: string; actor: string | null; details: Record
 const LIMIT_KEYS = ["companies", "employees", "entities", "members", "users"] as const;
 const ROLES = ["admin", "rrhh-coordinator", "operator", "employee", "member"] as const;
 const STATUS_TONES: Record<string, "ok" | "warn" | "neutral"> = { active: "ok", trial: "warn", suspended: "neutral", cancelled: "neutral" };
-const fmtDateTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString("es-ES") : "Nunca");
+const fmtDateTime = (iso: string | null) => (iso ? formatDateTime(iso) : "Nunca");
 
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -169,7 +170,7 @@ export default function TenantDetailPage() {
             {audit.map((a) => (
               <li key={a.id} className="flex items-center justify-between px-5 py-2 text-sm">
                 <span><Badge tone="info">{a.action}</Badge> <span className="text-ink-soft">{a.actor ?? ""}</span></span>
-                <span className="text-xs text-ink-soft">{new Date(a.created_at).toLocaleString("es-ES")}</span>
+                <span className="text-xs text-ink-soft">{formatDateTime(a.created_at)}</span>
               </li>
             ))}
           </ul>

@@ -60,6 +60,10 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('register/check-subdomain', [RegisterController::class, 'checkSubdomain']);
     Route::post('register', [RegisterController::class, 'register'])->middleware('throttle:10,1');
+
+    // Logo de marca blanca: público y resuelto por id de tenant en la ruta (lo usa <img>
+    // antes de autenticar y desde cualquier origen, sin cabecera de tenant).
+    Route::get('branding/{tenant}/logo', [BrandingController::class, 'logo']);
 });
 
 Route::prefix('v1')->middleware('tenant')->group(function () {
@@ -121,6 +125,7 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
     Route::middleware(['auth:sanctum', 'role:admin|super-admin'])->group(function () {
         // Marca blanca: branding y dominio propio.
         Route::put('branding', [BrandingController::class, 'update']);
+        Route::post('branding/logo', [BrandingController::class, 'uploadLogo']);
 
         // Grupos de empresas.
         Route::apiResource('company-groups', CompanyGroupController::class)

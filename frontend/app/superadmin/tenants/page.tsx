@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useDebounce } from "@/lib/hooks";
+import { formatDate } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, PageHeader, SelectField, Skeleton, TextField } from "@/components/ui";
 
 type Tenant = {
@@ -22,7 +23,7 @@ type Tenant = {
 type Plan = { id: number; slug: string; name: string };
 
 const STATUS_TONES: Record<string, "ok" | "warn" | "neutral"> = { active: "ok", trial: "warn", suspended: "neutral", cancelled: "neutral" };
-const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString("es-ES") : "—");
+const fmtDate = (iso: string | null) => formatDate(iso);
 
 export default function TenantsPage() {
   const router = useRouter();

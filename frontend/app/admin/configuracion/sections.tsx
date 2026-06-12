@@ -1,45 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, uploadFile } from "@/lib/api";
+import { useActiveCompany } from "@/lib/company";
+import { useToast } from "@/lib/toast";
+import { formatDate } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, Field, Modal, SelectField, Spinner, TextField, Toggle } from "@/components/ui";
+import { CalendarDetail } from "./calendar-detail";
 
 type Company = { id: string; name: string; cif: string; email: string | null; phone: string | null; company_group_id: string | null; group?: { id: string; name: string } | null };
 type Group = { id: string; name: string; companies_count?: number };
 
-/** Selector de empresa reutilizable. Devuelve null mientras carga. */
-function useCompanies(): Company[] | null {
-  const [companies, setCompanies] = useState<Company[] | null>(null);
-  useEffect(() => {
-    void (async () => {
-      const res = await api<{ data: Company[] }>("/companies");
-      setCompanies(res.data);
-    })();
-  }, []);
-  return companies;
+/** Empresa activa del header. Devuelve "" si no hay ninguna seleccionada. */
+function useCompanyId(): string {
+  return useActiveCompany()?.activeId ?? "";
 }
 
-/**
- * Empresa seleccionada con valor por defecto derivado (la primera) sin usar un effect
- * que llame a setState: el override solo se aplica cuando el usuario elige otra.
- */
-function usePicked(companies: Company[] | null): [string, (v: string) => void] {
-  const [picked, setPicked] = useState("");
-  const id = picked || companies?.[0]?.id || "";
-  return [id, setPicked];
-}
-
-function CompanyPicker({ companies, value, onChange }: { companies: Company[]; value: string; onChange: (v: string) => void }) {
-  return (
-    <SelectField
-      label="Empresa"
-      value={value}
-      onChange={onChange}
-      className="max-w-sm"
-      options={companies.map((c) => [c.id, c.name] as const)}
-    />
-  );
-}
+const NO_COMPANY = (
+  <EmptyState title="Selecciona una empresa" message="Selecciona una empresa en el menú superior para ver esta sección." />
+);
 
 // ─────────────────────────────────────────── Módulos ───────────────────────────────────────────
 
@@ -211,59 +190,153 @@ function CompanyForm({ company, groups, onClose, onSaved }: { company: Company |
 
 // ─────────────────────────────────────── Centros de trabajo ───────────────────────────────────────
 
-type WorkCenter = { id: string; name: string; address: string | null; timezone: string | null };
+type WorkCenter = {
+  id: string;
+  name: string;
+  address: string | null;
+  timezone: string | null;
+  location_required: boolean;
+  agreement_ids?: string[];
+};
+type AgreementOption = { id: string; name: string };
 
 export function CentrosSection() {
-  const companies = useCompanies();
-  const [companyId, setCompanyId] = usePicked(companies);
+  const companyId = useCompanyId();
   const [centers, setCenters] = useState<WorkCenter[]>([]);
-  const [form, setForm] = useState({ name: "", address: "", timezone: "Europe/Madrid" });
-  const [error, setError] = useState<string | null>(null);
+  const [agreements, setAgreements] = useState<AgreementOption[]>([]);
+  const [editing, setEditing] = useState<WorkCenter | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     if (!companyId) return;
-    const res = await api<{ data: WorkCenter[] }>(`/companies/${companyId}/work-centers`);
-    setCenters(res.data);
+    const [c, a] = await Promise.all([
+      api<{ data: WorkCenter[] }>(`/companies/${companyId}/work-centers`),
+      api<{ data: AgreementOption[] }>(`/agreements?company_id=${companyId}`),
+    ]);
+    setCenters(c.data);
+    setAgreements(a.data);
   }, [companyId]);
   useEffect(() => { void (async () => { await load(); })(); }, [load]);
 
-  async function create() {
-    setError(null);
-    try {
-      await api(`/companies/${companyId}/work-centers`, { method: "POST", body: { name: form.name, address: form.address || null, timezone: form.timezone || null } });
-      setForm({ name: "", address: "", timezone: "Europe/Madrid" });
-      await load();
-    } catch (e) { setError(e instanceof ApiError ? e.message : "Error"); }
+  async function remove(id: string) {
+    try { await api(`/work-centers/${id}`, { method: "DELETE" }); await load(); }
+    catch (e) { toast.error(e instanceof ApiError ? e.message : "Error"); }
   }
-  async function remove(id: string) { await api(`/work-centers/${id}`, { method: "DELETE" }); await load(); }
 
-  if (!companies) return <Spinner />;
-  if (companies.length === 0) return <EmptyState title="Sin empresas" message="Crea una empresa en la pestaña «Empresas y grupos»." />;
+  if (!companyId) return NO_COMPANY;
 
   return (
     <div className="space-y-4">
-      <Card className="p-5"><CompanyPicker companies={companies} value={companyId} onChange={setCompanyId} /></Card>
-      <Card className="p-5">
-        <h3 className="mb-3 text-sm font-semibold text-primary">Centros de trabajo</h3>
-        {centers.length === 0 ? <p className="mb-4 text-sm text-ink-soft">Sin centros.</p> : (
-          <ul className="mb-4 divide-y divide-line">
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <h3 className="text-sm font-semibold text-primary">Centros de trabajo</h3>
+          <Button onClick={() => { setEditing(null); setShowForm(true); }}>Nuevo centro</Button>
+        </div>
+        {centers.length === 0 ? <p className="p-6 text-sm text-ink-soft">Sin centros.</p> : (
+          <ul className="divide-y divide-line">
             {centers.map((c) => (
-              <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                <span><span className="font-medium text-ink">{c.name}</span>{c.address && <span className="text-ink-soft"> · {c.address}</span>}</span>
-                <button onClick={() => remove(c.id)} className="text-xs text-red-600 hover:underline">Eliminar</button>
+              <li key={c.id} className="flex items-center justify-between px-5 py-3 text-sm">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-ink">{c.name}</span>
+                  {c.address && <span className="text-ink-soft">· {c.address}</span>}
+                  {c.location_required && <Badge tone="info">Geolocalización</Badge>}
+                  {(c.agreement_ids?.length ?? 0) > 0 && <Badge tone="neutral">{c.agreement_ids!.length} convenio(s)</Badge>}
+                </span>
+                <span className="flex gap-3">
+                  <button onClick={() => { setEditing(c); setShowForm(true); }} className="text-xs font-medium text-primary hover:underline">Editar</button>
+                  <button onClick={() => remove(c.id)} className="text-xs text-red-600 hover:underline">Eliminar</button>
+                </span>
               </li>
             ))}
           </ul>
         )}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <TextField label="Nombre" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} />
-          <TextField label="Dirección" value={form.address} onChange={(v) => setForm((p) => ({ ...p, address: v }))} />
-          <TextField label="Zona horaria" value={form.timezone} onChange={(v) => setForm((p) => ({ ...p, timezone: v }))} />
-        </div>
-        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-        <div className="mt-3"><Button variant="secondary" onClick={create} disabled={!form.name}>Añadir centro</Button></div>
       </Card>
+
+      {showForm && (
+        <WorkCenterForm
+          companyId={companyId}
+          center={editing}
+          agreements={agreements}
+          onClose={() => setShowForm(false)}
+          onSaved={() => { setShowForm(false); void load(); }}
+        />
+      )}
     </div>
+  );
+}
+
+function WorkCenterForm({ companyId, center, agreements, onClose, onSaved }: {
+  companyId: string;
+  center: WorkCenter | null;
+  agreements: AgreementOption[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: center?.name ?? "",
+    address: center?.address ?? "",
+    timezone: center?.timezone ?? "Europe/Madrid",
+    location_required: center?.location_required ?? false,
+  });
+  const [agreementIds, setAgreementIds] = useState<string[]>(center?.agreement_ids ?? []);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleAgreement(id: string) {
+    setAgreementIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function submit() {
+    setError(null); setBusy(true);
+    try {
+      const body = {
+        name: form.name,
+        address: form.address || null,
+        timezone: form.timezone || null,
+        location_required: form.location_required,
+        agreement_ids: agreementIds,
+      };
+      await api(center ? `/work-centers/${center.id}` : `/companies/${companyId}/work-centers`,
+        { method: center ? "PUT" : "POST", body });
+      onSaved();
+    } catch (e) { setError(e instanceof ApiError ? e.message : "No se pudo guardar"); } finally { setBusy(false); }
+  }
+
+  return (
+    <Modal title={center ? "Editar centro" : "Nuevo centro de trabajo"} onClose={onClose}>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <TextField label="Nombre" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} />
+        <TextField label="Dirección" value={form.address} onChange={(v) => setForm((p) => ({ ...p, address: v }))} />
+        <TextField label="Zona horaria" value={form.timezone} onChange={(v) => setForm((p) => ({ ...p, timezone: v }))} />
+      </div>
+      <div className="mt-3">
+        <Toggle
+          on={form.location_required}
+          onClick={() => setForm((p) => ({ ...p, location_required: !p.location_required }))}
+          label="Exigir geolocalización al fichar presencialmente"
+        />
+      </div>
+      <Field label="Convenios aplicables" className="mt-3">
+        {agreements.length === 0 ? (
+          <p className="text-sm text-ink-soft">No hay convenios para esta empresa.</p>
+        ) : (
+          <div className="flex flex-col gap-1.5 rounded-[var(--radius-fluent)] border border-line bg-canvas/60 p-3">
+            {agreements.map((a) => (
+              <label key={a.id} className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={agreementIds.includes(a.id)} onChange={() => toggleAgreement(a.id)} className="accent-secondary" />
+                {a.name}
+              </label>
+            ))}
+          </div>
+        )}
+      </Field>
+      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+      <div className="mt-4 flex gap-2">
+        <Button onClick={submit} disabled={busy || !form.name}>{busy ? "Guardando…" : "Guardar"}</Button>
+        <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+      </div>
+    </Modal>
   );
 }
 
@@ -273,8 +346,7 @@ type Agreement = { id: string; name: string; annual_hours: number; vacation_days
 type LeaveType = { id: string; name: string; type: string; count_in: string };
 
 export function ConveniosSection() {
-  const companies = useCompanies();
-  const [companyId, setCompanyId] = usePicked(companies);
+  const companyId = useCompanyId();
   const [agreements, setAgreements] = useState<Agreement[]>([]);
   const [form, setForm] = useState({ name: "", annual_hours: "1780", vacation_days: "22", vacation_type: "laborables" });
   const [error, setError] = useState<string | null>(null);
@@ -299,12 +371,10 @@ export function ConveniosSection() {
   }
   async function remove(id: string) { try { await api(`/agreements/${id}`, { method: "DELETE" }); await load(); } catch (e) { alert(e instanceof ApiError ? e.message : "Error"); } }
 
-  if (!companies) return <Spinner />;
-  if (companies.length === 0) return <EmptyState title="Sin empresas" message="Crea una empresa en la pestaña «Empresas y grupos»." />;
+  if (!companyId) return NO_COMPANY;
 
   return (
     <div className="space-y-4">
-      <Card className="p-5"><CompanyPicker companies={companies} value={companyId} onChange={setCompanyId} /></Card>
       {agreements.map((a) => <AgreementCard key={a.id} agreement={a} onRemove={() => remove(a.id)} />)}
       <Card className="p-5">
         <h3 className="mb-3 text-sm font-semibold text-primary">Nuevo convenio</h3>
@@ -381,12 +451,12 @@ function AgreementCard({ agreement, onRemove }: { agreement: Agreement; onRemove
 type Milestone = { id: string; name: string; type: string; color: string; company_id: string };
 
 export function HitosSection() {
-  const companies = useCompanies();
-  const [companyId, setCompanyId] = usePicked(companies);
+  const companyId = useCompanyId();
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [form, setForm] = useState({ name: "", type: "entrada", color: "#5eb8d0" });
 
   const load = useCallback(async () => {
+    if (!companyId) return;
     const res = await api<{ data: Milestone[] }>("/milestones");
     setMilestones(res.data.filter((m) => m.company_id === companyId));
   }, [companyId]);
@@ -399,12 +469,10 @@ export function HitosSection() {
   }
   async function remove(id: string) { await api(`/milestones/${id}`, { method: "DELETE" }); await load(); }
 
-  if (!companies) return <Spinner />;
-  if (companies.length === 0) return <EmptyState title="Sin empresas" message="Crea una empresa en la pestaña «Empresas y grupos»." />;
+  if (!companyId) return NO_COMPANY;
 
   return (
     <div className="space-y-4">
-      <Card className="p-5"><CompanyPicker companies={companies} value={companyId} onChange={setCompanyId} /></Card>
       <Card className="p-5">
         <h3 className="mb-3 text-sm font-semibold text-primary">Hitos de fichaje</h3>
         {milestones.length === 0 ? <p className="mb-4 text-sm text-ink-soft">Sin hitos.</p> : (
@@ -434,41 +502,66 @@ export function HitosSection() {
 
 // ─────────────────────────────────────────── Festivos ───────────────────────────────────────────
 
-type Holiday = { id: string; name: string; type: string; repeatable: boolean; date: string | null; day_of_year: number | null; province: string | null };
+type Holiday = { id: string; name: string; type: string; repeatable: boolean; date: string | null; day_of_year: number | null; province: string | null; work_center_ids?: string[] };
+type CenterOption = { id: string; name: string };
 
 export function FestivosSection() {
+  const companyId = useCompanyId();
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(String(currentYear));
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [centers, setCenters] = useState<CenterOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: "", type: "local", date: "" });
+  const [workCenterIds, setWorkCenterIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await api<{ data: Holiday[] }>("/holidays");
-    setHolidays(res.data);
+    if (!companyId) { setLoading(false); return; }
+    const [h, c] = await Promise.all([
+      api<{ data: Holiday[] }>(`/holidays?company_id=${companyId}&year=${year}`),
+      api<{ data: CenterOption[] }>(`/companies/${companyId}/work-centers`),
+    ]);
+    setHolidays(h.data);
+    setCenters(c.data);
     setLoading(false);
-  }, []);
+  }, [companyId, year]);
   useEffect(() => { void (async () => { await load(); })(); }, [load]);
+
+  function toggleCenter(id: string) {
+    setWorkCenterIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function create() {
     setError(null);
     try {
-      await api("/holidays", { method: "POST", body: { name: form.name, type: form.type, repeatable: false, date: form.date } });
+      await api("/holidays", { method: "POST", body: { name: form.name, type: form.type, repeatable: false, date: form.date, work_center_ids: workCenterIds } });
       setForm({ name: "", type: "local", date: "" });
+      setWorkCenterIds([]);
       await load();
     } catch (e) { setError(e instanceof ApiError ? e.message : "Error"); }
   }
   async function remove(id: string) { await api(`/holidays/${id}`, { method: "DELETE" }); await load(); }
 
+  if (!companyId) return NO_COMPANY;
   if (loading) return <Spinner />;
+
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - 2 + i));
 
   return (
     <Card className="p-5">
-      <h3 className="mb-3 text-sm font-semibold text-primary">Festivos</h3>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-primary">Festivos</h3>
+        <SelectField label="Año" value={year} onChange={setYear} className="w-32" options={years.map((y) => [y, y] as const)} />
+      </div>
       {holidays.length === 0 ? <p className="mb-4 text-sm text-ink-soft">Sin festivos.</p> : (
         <ul className="mb-4 max-h-80 divide-y divide-line overflow-y-auto">
           {holidays.map((h) => (
             <li key={h.id} className="flex items-center justify-between py-2 text-sm">
-              <span><span className="font-medium text-ink">{h.name}</span> <span className="text-ink-soft">· {h.repeatable ? `día ${h.day_of_year}` : h.date} · {h.type}</span></span>
+              <span>
+                <span className="font-medium text-ink">{h.name}</span>{" "}
+                <span className="text-ink-soft">· {h.repeatable ? `día ${h.day_of_year}` : formatDate(h.date)} · {h.type}{(h.work_center_ids?.length ?? 0) === 0 ? " · nacional" : ""}</span>
+              </span>
               <button onClick={() => remove(h.id)} className="text-xs text-red-600 hover:underline">Eliminar</button>
             </li>
           ))}
@@ -480,6 +573,20 @@ export function FestivosSection() {
         <TextField label="Fecha" type="date" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} />
         <Button variant="secondary" onClick={create} disabled={!form.name || !form.date}>Añadir festivo</Button>
       </div>
+      <Field label="Centros de trabajo (vacío = nacional, aplica a todos)" className="mt-3">
+        {centers.length === 0 ? (
+          <p className="text-sm text-ink-soft">No hay centros para esta empresa.</p>
+        ) : (
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 rounded-[var(--radius-fluent)] border border-line bg-canvas/60 p-3">
+            {centers.map((c) => (
+              <label key={c.id} className="flex items-center gap-2 text-sm text-ink">
+                <input type="checkbox" checked={workCenterIds.includes(c.id)} onChange={() => toggleCenter(c.id)} className="accent-secondary" />
+                {c.name}
+              </label>
+            ))}
+          </div>
+        )}
+      </Field>
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
     </Card>
   );
@@ -487,13 +594,22 @@ export function FestivosSection() {
 
 // ─────────────────────────────────────────── Marca blanca ───────────────────────────────────────────
 
-type Branding = { app_name: string; primary_color: string; logo_path: string | null; custom_domain: string | null };
+type Branding = { app_name: string | null; primary_color: string | null; font: string | null; logo_path: string | null; custom_domain: string | null };
+
+const FONTS = [
+  ["IBM Plex Sans", "IBM Plex Sans"],
+  ["Inter", "Inter"],
+  ["Roboto", "Roboto"],
+  ["Open Sans", "Open Sans"],
+] as const;
 
 export function MarcaBlancaSection() {
   const [form, setForm] = useState<Branding | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState(false);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     const res = await api<{ data: Branding }>("/branding");
@@ -505,19 +621,32 @@ export function MarcaBlancaSection() {
 
   async function save() {
     if (!form) return;
-    setError(null); setOk(false); setBusy(true);
+    setError(null); setBusy(true);
     try {
       await api("/branding", { method: "PUT", body: {
         app_name: form.app_name || null,
         primary_color: form.primary_color || null,
+        font: form.font || null,
         logo_path: form.logo_path || null,
         custom_domain: form.custom_domain || null,
       } });
-      setOk(true);
+      toast.success("Branding guardado. Recarga para aplicar los cambios globalmente.");
     } catch (e) { setError(e instanceof ApiError ? e.message : "No se pudo guardar"); } finally { setBusy(false); }
   }
 
+  async function upload(file: File) {
+    setUploading(true); setError(null);
+    try {
+      const res = await uploadFile<{ data: Branding }>("/branding/logo", file);
+      setForm(res.data);
+      toast.success("Logo subido correctamente.");
+    } catch (e) { setError(e instanceof ApiError ? e.message : "No se pudo subir el logo"); } finally { setUploading(false); }
+  }
+
   if (!form) return <Spinner />;
+
+  const color = form.primary_color || "#0F2756";
+  const font = form.font || "IBM Plex Sans";
 
   return (
     <div className="space-y-4">
@@ -529,18 +658,74 @@ export function MarcaBlancaSection() {
 
       <Card className="p-5">
         <h3 className="mb-4 text-sm font-semibold text-primary">Personalización visual</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Nombre de la app" value={form.app_name ?? ""} onChange={(v) => set("app_name", v)} />
-          <Field label="Color principal">
-            <div className="flex items-center gap-2">
-              <input type="color" value={form.primary_color || "#0F2756"} onChange={(e) => set("primary_color", e.target.value)} className="h-9 w-16 rounded border border-line bg-canvas" />
-              <span className="text-sm text-ink-soft">{form.primary_color}</span>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3">
+            <TextField label="Nombre de la app" value={form.app_name ?? ""} onChange={(v) => set("app_name", v)} />
+            <Field label="Color principal">
+              <div className="flex items-center gap-2">
+                <input type="color" value={color} onChange={(e) => set("primary_color", e.target.value)} className="h-9 w-16 rounded border border-line bg-canvas" />
+                <input
+                  type="text"
+                  value={form.primary_color ?? ""}
+                  onChange={(e) => set("primary_color", e.target.value)}
+                  placeholder="#0F2756"
+                  className="w-32 rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
+                />
+              </div>
+            </Field>
+            <SelectField label="Tipografía" value={font} onChange={(v) => set("font", v)} options={FONTS} />
+
+            <Field label="Logo (subir fichero)">
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) void upload(file);
+                }}
+                className={`flex flex-col items-center justify-center gap-2 rounded-[var(--radius-fluent)] border-2 border-dashed p-5 text-center text-sm transition-colors ${dragOver ? "border-secondary bg-secondary/10" : "border-line bg-canvas/60"}`}
+              >
+                <p className="text-ink-soft">{uploading ? "Subiendo…" : "Arrastra una imagen aquí o"}</p>
+                <label className="cursor-pointer text-primary hover:underline">
+                  selecciona un archivo
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }}
+                  />
+                </label>
+              </div>
+            </Field>
+            <TextField label="URL del logo (alternativa externa)" value={form.logo_path ?? ""} onChange={(v) => set("logo_path", v)} placeholder="https://…/logo.png" />
+          </div>
+
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-ink">Vista previa</span>
+            <div className="rounded-[var(--radius-fluent)] border border-line bg-surface p-5" style={{ fontFamily: font }}>
+              <div className="flex items-center gap-3">
+                {form.logo_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={form.logo_path} alt="Logo" className="h-10 w-auto max-w-[160px] object-contain" />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-fluent)] text-sm font-bold text-white" style={{ background: color }}>
+                    {(form.app_name || "G").charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="text-xl font-semibold" style={{ color }}>{form.app_name || "Gestioname"}</span>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="inline-flex rounded-full px-3 py-1 text-xs font-medium text-white" style={{ background: color }}>Color principal</span>
+                <span className="inline-block h-6 w-6 rounded-full border border-line" style={{ background: color }} />
+                <span className="text-sm text-ink-soft">{color}</span>
+              </div>
+              <p className="mt-4 text-sm text-ink-soft">Texto de ejemplo en la tipografía <strong>{font}</strong> seleccionada.</p>
             </div>
-          </Field>
-          <TextField label="URL del logo" value={form.logo_path ?? ""} onChange={(v) => set("logo_path", v)} placeholder="https://…/logo.png" className="sm:col-span-2" />
+          </div>
         </div>
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-        {ok && <p className="mt-3 text-sm text-[#0d6b50]">Guardado. Recarga para ver los cambios aplicados.</p>}
         <div className="mt-4"><Button onClick={save} disabled={busy}>{busy ? "Guardando…" : "Guardar branding"}</Button></div>
       </Card>
     </div>
@@ -549,14 +734,14 @@ export function MarcaBlancaSection() {
 
 // ─────────────────────────────────────────── Calendarios ───────────────────────────────────────────
 
-type Template = { id: string; name: string; type: string; year: number; color: string; daily_hours: number | null };
-type Calendar = { id: string; name: string; year: number; days_count?: number; company_id: string };
+export type Template = { id: string; name: string; type: string; year: number; color: string; daily_hours: number | null };
+type Calendar = { id: string; name: string; year: number; days_count?: number; company_id: string; color: string };
 
 export function CalendariosSection() {
-  const companies = useCompanies();
-  const [companyId, setCompanyId] = usePicked(companies);
+  const companyId = useCompanyId();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [calendars, setCalendars] = useState<Calendar[]>([]);
+  const [selected, setSelected] = useState<Calendar | null>(null);
   const year = new Date().getFullYear();
   const [tplForm, setTplForm] = useState({ name: "", type: "fijo", color: "#0f2756" });
   const [calForm, setCalForm] = useState({ name: "", color: "#5eb8d0" });
@@ -583,13 +768,10 @@ export function CalendariosSection() {
     await load();
   }
 
-  if (!companies) return <Spinner />;
-  if (companies.length === 0) return <EmptyState title="Sin empresas" message="Crea una empresa en la pestaña «Empresas y grupos»." />;
+  if (!companyId) return NO_COMPANY;
 
   return (
     <div className="space-y-4">
-      <Card className="p-5"><CompanyPicker companies={companies} value={companyId} onChange={setCompanyId} /></Card>
-
       <Card className="p-5">
         <h3 className="mb-3 text-sm font-semibold text-primary">Plantillas de horario ({year})</h3>
         {templates.length === 0 ? <p className="mb-4 text-sm text-ink-soft">Sin plantillas.</p> : (
@@ -618,7 +800,12 @@ export function CalendariosSection() {
           <ul className="mb-4 divide-y divide-line">
             {calendars.map((c) => (
               <li key={c.id} className="flex items-center justify-between py-2 text-sm">
-                <span className="font-medium text-ink">{c.name} <span className="font-normal text-ink-soft">· {c.year}{typeof c.days_count === "number" ? ` · ${c.days_count} días asignados` : ""}</span></span>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded-full" style={{ background: c.color }} />
+                  <span className="font-medium text-ink">{c.name}</span>
+                  <span className="font-normal text-ink-soft">· {c.year}{typeof c.days_count === "number" ? ` · ${c.days_count} días asignados` : ""}</span>
+                </span>
+                <button onClick={() => setSelected(c)} className="text-xs font-medium text-primary hover:underline">Gestionar días</button>
               </li>
             ))}
           </ul>
@@ -628,8 +815,18 @@ export function CalendariosSection() {
           <Field label="Color"><input type="color" value={calForm.color} onChange={(e) => setCalForm((p) => ({ ...p, color: e.target.value }))} className="h-9 w-16 rounded border border-line bg-canvas" /></Field>
           <Button variant="secondary" onClick={createCalendar} disabled={!calForm.name}>Añadir calendario</Button>
         </div>
-        <p className="mt-3 text-xs text-ink-soft">El llenado rápido/manual de días se gestiona desde el detalle del calendario (próximamente en esta vista).</p>
       </Card>
+
+      {selected && (
+        <CalendarDetail
+          calendarId={selected.id}
+          calendarName={selected.name}
+          year={selected.year}
+          templates={templates}
+          onClose={() => setSelected(null)}
+          onChanged={() => { void load(); }}
+        />
+      )}
     </div>
   );
 }

@@ -24,6 +24,9 @@ class UpdateWorkCenterRequest extends FormRequest
             'lat' => ['nullable', 'numeric', 'between:-90,90'],
             'lng' => ['nullable', 'numeric', 'between:-180,180'],
             'timezone' => ['nullable', 'timezone:all'],
+            'location_required' => ['boolean'],
+            'agreement_ids' => ['array'],
+            'agreement_ids.*' => ['uuid', 'exists:agreements,id'],
         ];
     }
 }

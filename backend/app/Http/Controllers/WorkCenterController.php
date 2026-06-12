@@ -20,7 +20,7 @@ class WorkCenterController extends Controller
     public function index(Company $company): AnonymousResourceCollection
     {
         return WorkCenterResource::collection(
-            $company->workCenters()->with('milestones')->orderBy('name')->paginate()
+            $company->workCenters()->with(['milestones', 'agreements'])->orderBy('name')->paginate()
         );
     }
 

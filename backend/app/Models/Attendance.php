@@ -26,7 +26,7 @@ class Attendance extends Model
 
     /** @var list<string> */
     protected $fillable = [
-        'employee_id', 'milestone_id', 'clocked_at', 'lat', 'lng', 'ip_address', 'method',
+        'employee_id', 'milestone_id', 'clocked_at', 'lat', 'lng', 'ip_address', 'method', 'work_mode',
     ];
 
     /**
