@@ -7,6 +7,7 @@ namespace App\Services\Auth;
 use App\Models\MagicLinkToken;
 use App\Models\User;
 use App\Notifications\MagicLinkNotification;
+use App\Support\TenantUrl;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -128,12 +129,7 @@ final class AuthService
             'expires_at' => Carbon::now()->addMinutes($ttlMinutes),
         ]);
 
-        return sprintf(
-            '%s/auth/magic-link?token=%s&tenant=%s',
-            rtrim((string) config('app.frontend_url'), '/'),
-            urlencode($plain),
-            urlencode($subdomain),
-        );
+        return TenantUrl::magicLink($subdomain, $plain);
     }
 
     /**
@@ -160,12 +156,7 @@ final class AuthService
 
         $user->notify(new MagicLinkNotification($plain, $subdomain));
 
-        $url = sprintf(
-            '%s/auth/magic-link?token=%s&tenant=%s',
-            rtrim((string) config('app.frontend_url'), '/'),
-            urlencode($plain),
-            urlencode($subdomain),
-        );
+        $url = TenantUrl::magicLink($subdomain, $plain);
 
         return ['token' => $plain, 'url' => $url, 'expires_at' => $expiresAt];
     }

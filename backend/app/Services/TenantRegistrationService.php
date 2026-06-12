@@ -10,6 +10,7 @@ use App\Models\TenantModule;
 use App\Notifications\TenantWelcomeNotification;
 use App\Services\Auth\AuthService;
 use App\Support\TenantSchema;
+use App\Support\TenantUrl;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -80,7 +81,7 @@ final class TenantRegistrationService
 
         return [
             'tenant' => $tenant->fresh(),
-            'url' => "https://{$subdomain}.gestioname.app",
+            'url' => TenantUrl::frontend($subdomain),
         ];
     }
 

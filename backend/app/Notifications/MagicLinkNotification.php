@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
+use App\Support\TenantUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -31,12 +32,7 @@ class MagicLinkNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $url = sprintf(
-            '%s/auth/magic-link?token=%s&tenant=%s',
-            rtrim((string) config('app.frontend_url'), '/'),
-            urlencode($this->token),
-            urlencode($this->subdomain),
-        );
+        $url = TenantUrl::magicLink($this->subdomain, $this->token);
 
         return (new MailMessage)
             ->subject('Tu enlace de acceso a Gestioname')

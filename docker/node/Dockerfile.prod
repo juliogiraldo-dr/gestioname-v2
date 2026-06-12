@@ -7,9 +7,9 @@ RUN npm ci
 COPY frontend/ ./
 # En producción la API se sirve en el mismo origen bajo /api (Next reescribe a BACKEND_ORIGIN).
 ENV NEXT_PUBLIC_API_URL=/api/v1
-# Tenant por defecto vía cabecera X-Tenant-ID (subdominio automático sin wildcard).
-# Con dominio propio *.gestioname.app, reconstruir con NEXT_PUBLIC_TENANT vacío.
-ENV NEXT_PUBLIC_TENANT=demo
+# Multi-tenant por subdominio (*.app.gestioname.es): el tenant se resuelve en el backend
+# por el subdominio del host, no por cabecera fija. Se deja vacío a propósito.
+ENV NEXT_PUBLIC_TENANT=
 # Origen interno del backend para las reescrituras de Next (nombre de servicio en el compose).
 ENV BACKEND_ORIGIN=http://backend:8000
 RUN npm run build

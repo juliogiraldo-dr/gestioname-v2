@@ -35,6 +35,13 @@ return [
     'default_tenant' => env('DEFAULT_TENANT'),
 
     /*
+    | Dominio base de los tenants (p. ej. `app.gestioname.es`). Si se define, los enlaces
+    | por tenant (magic link, bienvenida) apuntan a `https://{subdominio}.{tenant_domain}`.
+    | Si está vacío, se usa `frontend_url`.
+    */
+    'tenant_domain' => env('TENANT_DOMAIN'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
