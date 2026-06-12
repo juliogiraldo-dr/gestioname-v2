@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Recordatorios automáticos de cuota: una pasada diaria sobre todos los tenants.
 Schedule::command('reminders:quota')->dailyAt('07:00')->withoutOverlapping();
+
+// Avisos de trial (7 días antes y al caducar): una pasada diaria.
+Schedule::command('trials:notify')->dailyAt('08:00')->withoutOverlapping();

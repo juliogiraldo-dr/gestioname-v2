@@ -42,6 +42,8 @@ class RegisterController extends Controller
                 Rule::notIn(self::RESERVED), Rule::unique('tenants', 'subdomain'),
             ],
             'admin_email' => ['required', 'email', 'max:255'],
+            // Aceptación obligatoria de términos y privacidad (RGPD/LOPD).
+            'terms_accepted' => ['accepted'],
         ]);
 
         try {
@@ -52,6 +54,7 @@ class RegisterController extends Controller
                 planSlug: 'free',
                 trialDays: 30,
                 type: $data['type'],
+                termsAccepted: true,
             );
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage(), 'code' => 'TENANT_PROVISION_FAILED'], 422);

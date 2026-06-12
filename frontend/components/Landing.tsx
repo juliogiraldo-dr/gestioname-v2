@@ -1,149 +1,372 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { api, ApiError } from "@/lib/api";
 import { useBranding } from "@/lib/branding";
-import { useDebounce } from "@/lib/hooks";
-import { Button, Card, Field, SelectField, TextField } from "@/components/ui";
+import { Badge } from "@/components/ui";
+import {
+  ClockIcon,
+  UsersIcon,
+  EuroIcon,
+  BuildingIcon,
+  EntityIcon,
+  CheckIcon,
+} from "@/components/icons";
 
-const TYPES = [
-  ["empresa", "Empresa con empleados"],
-  ["entidad", "Asociación o entidad"],
-  ["ambas", "Ambas cosas"],
-] as const;
+const VALUE_PROPS: ReadonlyArray<{
+  Icon: (p: { className?: string }) => React.ReactNode;
+  title: string;
+  desc: string;
+}> = [
+  {
+    Icon: ClockIcon,
+    title: "RRHH y fichajes",
+    desc: "Control de jornada conforme al ET 34.9, ausencias, vacaciones y nóminas.",
+  },
+  {
+    Icon: UsersIcon,
+    title: "Socios y entidades",
+    desc: "Gestión de asociaciones: altas de socios, cuotas y portal del socio.",
+  },
+  {
+    Icon: EuroIcon,
+    title: "Tesorería",
+    desc: "Cobros, pagos y enlace contable listo para tu gestoría.",
+  },
+];
+
+const STEPS: ReadonlyArray<{ n: string; title: string; desc: string }> = [
+  { n: "1", title: "Regístrate", desc: "Crea tu cuenta gratis en menos de un minuto, sin tarjeta." },
+  { n: "2", title: "Configura", desc: "Da de alta tu empresa o asociación y personaliza tu espacio." },
+  { n: "3", title: "Gestiona", desc: "Empieza a fichar, gestionar socios y llevar la tesorería." },
+];
+
+type Plan = {
+  name: string;
+  monthly: number;
+  annual: number; // precio mensual facturando anual
+  features: string[];
+  highlight?: boolean;
+};
+
+const PLANS: ReadonlyArray<Plan> = [
+  {
+    name: "Free",
+    monthly: 0,
+    annual: 0,
+    features: ["Hasta 5 empleados", "Fichaje y control de jornada", "1 empresa o entidad"],
+  },
+  {
+    name: "Starter",
+    monthly: 19,
+    annual: 15,
+    features: ["Hasta 15 empleados", "Ausencias y vacaciones", "Portal del empleado", "Exportación a Excel"],
+  },
+  {
+    name: "Professional",
+    monthly: 49,
+    annual: 39,
+    highlight: true,
+    features: ["Hasta 50 empleados", "Socios y asociaciones", "Tesorería", "Informes avanzados", "Soporte prioritario"],
+  },
+  {
+    name: "Business",
+    monthly: 99,
+    annual: 79,
+    features: ["Empleados ilimitados", "Multi-empresa y multi-entidad", "Enlace contable a3asesor", "Marca blanca", "Acceso para tu gestoría"],
+  },
+];
+
+const FAQ: ReadonlyArray<{ q: string; a: string }> = [
+  {
+    q: "¿Necesito tarjeta para empezar?",
+    a: "No. El plan Free es gratuito y no requiere tarjeta de crédito. Puedes empezar a usarlo de inmediato.",
+  },
+  {
+    q: "¿El control de jornada cumple la normativa?",
+    a: "Sí. El registro de jornada es inmutable y conforme al artículo 34.9 del Estatuto de los Trabajadores; las correcciones quedan auditadas.",
+  },
+  {
+    q: "¿Puedo gestionar una empresa y una asociación a la vez?",
+    a: "Sí. Puedes elegir gestionar una empresa, una asociación o ambas dentro del mismo espacio.",
+  },
+  {
+    q: "¿Dónde se alojan mis datos?",
+    a: "Tus datos se alojan de forma aislada por organización y se cifran los campos sensibles (IBAN, DNI). Cumplimos con el RGPD/LOPD.",
+  },
+  {
+    q: "¿Puedo exportar mi información?",
+    a: "Sí. Puedes exportar tus datos en Excel y PDF, y generar el fichero de enlace contable para tu gestoría en cualquier momento.",
+  },
+  {
+    q: "¿Puedo cambiar de plan más adelante?",
+    a: "Por supuesto. Puedes subir o bajar de plan cuando quieras desde el panel de administración.",
+  },
+];
+
+const USE_CASES: ReadonlyArray<{
+  Icon: (p: { className?: string }) => React.ReactNode;
+  title: string;
+  desc: string;
+}> = [
+  {
+    Icon: BuildingIcon,
+    title: "Para empresas",
+    desc: "Controla la jornada de tu equipo, gestiona ausencias y ten las nóminas a punto para tu gestoría.",
+  },
+  {
+    Icon: EntityIcon,
+    title: "Para asociaciones",
+    desc: "Lleva el registro de socios, gestiona cuotas y ofrece un portal propio a tus miembros.",
+  },
+  {
+    Icon: UsersIcon,
+    title: "Para ambas",
+    desc: "Si gestionas una empresa y una asociación, únelo todo en un único espacio sin duplicar trabajo.",
+  },
+];
 
 export function Landing() {
   const { app_name } = useBranding();
-  const [done, setDone] = useState<string | null>(null);
+  const [annual, setAnnual] = useState(true);
 
   return (
     <main className="min-h-full">
-      <header className="flex items-center justify-between px-6 py-5 sm:px-10">
-        <span className="text-lg font-semibold text-primary">{app_name}</span>
-        <Link href="/login" className="text-sm font-medium text-primary hover:underline">Iniciar sesión</Link>
+      <header className="sticky top-0 z-30 border-b border-line bg-canvas/80 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 sm:px-10">
+          <span className="text-lg font-semibold text-primary">{app_name}</span>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium text-ink-soft hover:text-primary">
+              Iniciar sesión
+            </Link>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center rounded-[var(--radius-fluent)] bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600"
+            >
+              Empieza gratis
+            </Link>
+          </div>
+        </div>
       </header>
 
-      <section className="mx-auto grid max-w-6xl gap-10 px-6 py-10 sm:px-10 lg:grid-cols-2 lg:items-center lg:py-20">
-        <div>
-          <h1 className="text-4xl font-semibold leading-tight text-primary sm:text-5xl">
-            Gestión de RRHH, fichajes y asociaciones, en un solo sitio.
-          </h1>
-          <p className="mt-5 max-w-md text-lg text-ink-soft">
-            Control de jornada conforme al ET 34.9, gestión de empleados, socios y tesorería.
-            Empieza gratis en menos de un minuto.
-          </p>
-          <ul className="mt-6 space-y-2 text-sm text-ink-soft">
-            <li>✓ Plan gratuito sin tarjeta · 30 días con todo</li>
-            <li>✓ Tu subdominio propio en gestioname.app</li>
-            <li>✓ Empresa, asociación o ambas</li>
-          </ul>
-        </div>
-
-        <div>
-          {done ? <Confirmation url={done} /> : <RegisterForm onDone={setDone} />}
+      {/* Hero */}
+      <section className="mx-auto max-w-6xl px-6 py-16 text-center sm:px-10 lg:py-24">
+        <h1 className="mx-auto max-w-3xl text-4xl font-semibold leading-tight text-primary sm:text-5xl">
+          La gestión de tu empresa o asociación, sin complicaciones
+        </h1>
+        <p className="mx-auto mt-5 max-w-xl text-lg text-ink-soft">
+          RRHH, control de jornada, socios y tesorería en una sola plataforma. Empieza gratis, sin tarjeta y en menos de
+          un minuto.
+        </p>
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/onboarding"
+            className="inline-flex w-full items-center justify-center rounded-[var(--radius-fluent)] bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-600 sm:w-auto"
+          >
+            Empieza gratis
+          </Link>
+          <Link
+            href="/login"
+            className="inline-flex w-full items-center justify-center rounded-[var(--radius-fluent)] bg-secondary/15 px-6 py-3 text-sm font-medium text-primary transition-colors hover:bg-secondary/25 sm:w-auto"
+          >
+            Ver demo
+          </Link>
         </div>
       </section>
-    </main>
-  );
-}
 
-function Confirmation({ url }: { url: string }) {
-  return (
-    <Card className="p-8 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/20 text-2xl">✉️</div>
-      <h2 className="text-xl font-semibold text-primary">Revisa tu email para acceder</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-ink-soft">
-        Hemos creado tu cuenta en <span className="font-medium text-ink">{url}</span> y te hemos enviado un enlace de acceso.
-      </p>
-    </Card>
-  );
-}
+      {/* Propuesta de valor */}
+      <section className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
+        <div className="grid gap-6 sm:grid-cols-3">
+          {VALUE_PROPS.map(({ Icon, title, desc }) => (
+            <div key={title} className="rounded-[var(--radius-fluent)] border border-line bg-surface p-6 shadow-[var(--shadow-fluent)]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-fluent)] bg-secondary/20 text-primary">
+                <Icon className="h-6 w-6" />
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{title}</h3>
+              <p className="mt-1.5 text-sm text-ink-soft">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-function RegisterForm({ onDone }: { onDone: (url: string) => void }) {
-  const [form, setForm] = useState({ name: "", type: "ambas", subdomain: "", admin_email: "" });
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [check, setCheck] = useState<{ valid: boolean; available: boolean } | null>(null);
-  const debouncedSub = useDebounce(form.subdomain, 300);
+      {/* Cómo funciona */}
+      <section className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
+        <h2 className="text-center text-2xl font-semibold text-primary">Cómo funciona</h2>
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          {STEPS.map(({ n, title, desc }) => (
+            <div key={n} className="text-center">
+              <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                {n}
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{title}</h3>
+              <p className="mt-1.5 text-sm text-ink-soft">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-  const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
+      {/* Planes y precios */}
+      <section id="precios" className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
+        <h2 className="text-center text-2xl font-semibold text-primary">Planes y precios</h2>
+        <p className="mt-2 text-center text-sm text-ink-soft">Empieza gratis y crece cuando lo necesites.</p>
 
-  useEffect(() => {
-    if (!debouncedSub) return;
-    let active = true;
-    void (async () => {
-      try {
-        const res = await api<{ data: { valid: boolean; available: boolean } }>(
-          `/register/check-subdomain?subdomain=${encodeURIComponent(debouncedSub)}`,
-          { auth: false },
-        );
-        if (active) setCheck(res.data);
-      } catch {
-        if (active) setCheck(null);
-      }
-    })();
-    return () => { active = false; };
-  }, [debouncedSub]);
-
-  async function submit() {
-    setError(null);
-    setBusy(true);
-    try {
-      const res = await api<{ data: { url: string } }>("/register", {
-        method: "POST",
-        auth: false,
-        body: { name: form.name, type: form.type, subdomain: form.subdomain.toLowerCase(), admin_email: form.admin_email },
-      });
-      onDone(res.data.url);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const subHint = !form.subdomain
-    ? null
-    : check === null
-      ? "Comprobando…"
-      : !check.valid
-        ? "Subdominio no válido"
-        : check.available
-          ? "✓ Disponible"
-          : "No disponible";
-
-  return (
-    <Card className="p-6">
-      <h2 className="mb-1 text-xl font-semibold text-primary">Empieza gratis</h2>
-      <p className="mb-5 text-sm text-ink-soft">Crea tu espacio en 1 minuto.</p>
-      <div className="space-y-4">
-        <TextField label="Nombre de la organización" value={form.name} onChange={(v) => set("name", v)} />
-        <SelectField label="¿Qué gestionas?" value={form.type} onChange={(v) => set("type", v)} options={TYPES} />
-        <Field label="Subdominio deseado">
-          <div className="flex items-center gap-2">
-            <input
-              value={form.subdomain}
-              onChange={(e) => set("subdomain", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-              placeholder="miempresa"
-              className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
+        <div className="mt-6 flex items-center justify-center gap-3 text-sm">
+          <span className={annual ? "text-ink-soft" : "font-medium text-primary"}>Mensual</span>
+          <button
+            type="button"
+            onClick={() => setAnnual((a) => !a)}
+            aria-label="Cambiar facturación"
+            className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full bg-secondary/40 transition-colors"
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-primary shadow transition-transform ${
+                annual ? "translate-x-5" : "translate-x-0.5"
+              }`}
             />
-            <span className="whitespace-nowrap text-sm text-ink-soft">.gestioname.app</span>
+          </button>
+          <span className={annual ? "font-medium text-primary" : "text-ink-soft"}>Anual</span>
+          <Badge tone="ok">2 meses gratis</Badge>
+        </div>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {PLANS.map((plan) => {
+            const price = annual ? plan.annual : plan.monthly;
+            return (
+              <div
+                key={plan.name}
+                className={`relative flex flex-col rounded-[var(--radius-fluent)] border bg-surface p-6 shadow-[var(--shadow-fluent)] ${
+                  plan.highlight ? "border-secondary ring-2 ring-secondary/30" : "border-line"
+                }`}
+              >
+                {plan.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge tone="info">Recomendado</Badge>
+                  </span>
+                )}
+                <h3 className="text-lg font-semibold text-primary">{plan.name}</h3>
+                <p className="mt-3">
+                  <span className="text-3xl font-semibold text-ink">{price}€</span>
+                  <span className="text-sm text-ink-soft">/mes</span>
+                </p>
+                {annual && plan.monthly > 0 && (
+                  <p className="mt-1 text-xs text-ink-soft">Facturación anual</p>
+                )}
+                <ul className="mt-5 flex-1 space-y-2 text-sm text-ink-soft">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/onboarding"
+                  className={`mt-6 inline-flex items-center justify-center rounded-[var(--radius-fluent)] px-4 py-2 text-sm font-medium transition-colors ${
+                    plan.highlight
+                      ? "bg-primary text-white hover:bg-primary-600"
+                      : "bg-secondary/15 text-primary hover:bg-secondary/25"
+                  }`}
+                >
+                  Empezar
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Casos de uso */}
+      <section className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
+        <h2 className="text-center text-2xl font-semibold text-primary">Para quién es</h2>
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          {USE_CASES.map(({ Icon, title, desc }) => (
+            <div key={title} className="rounded-[var(--radius-fluent)] border border-line bg-surface p-6 shadow-[var(--shadow-fluent)]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-fluent)] bg-accent/20 text-primary">
+                <Icon className="h-6 w-6" />
+              </span>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{title}</h3>
+              <p className="mt-1.5 text-sm text-ink-soft">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="mx-auto max-w-3xl px-6 py-12 sm:px-10">
+        <h2 className="text-center text-2xl font-semibold text-primary">Preguntas frecuentes</h2>
+        <div className="mt-8 space-y-3">
+          {FAQ.map(({ q, a }) => (
+            <details
+              key={q}
+              className="group rounded-[var(--radius-fluent)] border border-line bg-surface p-4 shadow-[var(--shadow-fluent)]"
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm font-medium text-ink marker:content-none">
+                {q}
+                <span className="text-ink-soft transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p className="mt-3 text-sm text-ink-soft">{a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA final */}
+      <section className="mx-auto max-w-6xl px-6 py-12 sm:px-10">
+        <div className="rounded-[var(--radius-fluent)] bg-primary px-6 py-12 text-center text-white sm:px-10">
+          <h2 className="text-2xl font-semibold">Empieza hoy, gratis</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-white/80">
+            Crea tu espacio en menos de un minuto. Sin tarjeta, sin compromiso.
+          </p>
+          <Link
+            href="/onboarding"
+            className="mt-6 inline-flex items-center justify-center rounded-[var(--radius-fluent)] bg-white px-6 py-3 text-sm font-medium text-primary transition-colors hover:bg-white/90"
+          >
+            Empieza gratis
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-line">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:px-10 md:grid-cols-4">
+          <div>
+            <span className="text-lg font-semibold text-primary">{app_name}</span>
+            <p className="mt-2 text-sm text-ink-soft">
+              Gestión de RRHH, socios y tesorería para empresas y asociaciones.
+            </p>
           </div>
-          {subHint && (
-            <span className={`mt-1 block text-xs ${check?.available ? "text-[#0d6b50]" : "text-ink-soft"}`}>{subHint}</span>
-          )}
-        </Field>
-        <TextField label="Email del administrador" type="email" value={form.admin_email} onChange={(v) => set("admin_email", v)} />
-        {error && <p className="rounded-[var(--radius-fluent)] bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        <Button
-          onClick={submit}
-          className="w-full"
-          disabled={busy || !form.name || !form.admin_email || !check?.available}
-        >
-          {busy ? "Creando…" : "Empieza gratis"}
-        </Button>
-      </div>
-    </Card>
+          <div>
+            <h3 className="text-sm font-semibold text-ink">Producto</h3>
+            <ul className="mt-3 space-y-2 text-sm text-ink-soft">
+              <li><a href="#precios" className="hover:text-primary">Precios</a></li>
+              <li><Link href="/onboarding" className="hover:text-primary">Empieza gratis</Link></li>
+              <li><Link href="/login" className="hover:text-primary">Iniciar sesión</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-ink">Legal</h3>
+            <ul className="mt-3 space-y-2 text-sm text-ink-soft">
+              <li><Link href="/legal/privacidad" className="hover:text-primary">Privacidad</Link></li>
+              <li><Link href="/legal/terminos" className="hover:text-primary">Términos</Link></li>
+              <li><Link href="/legal/cookies" className="hover:text-primary">Cookies</Link></li>
+              <li><Link href="/legal/dpa" className="hover:text-primary">DPA</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-ink">Contacto</h3>
+            <ul className="mt-3 space-y-2 text-sm text-ink-soft">
+              <li>
+                <a href="mailto:info@datarecover.es" className="hover:text-primary">info@datarecover.es</a>
+              </li>
+              <li>Datarecover S.L.</li>
+              <li>Majadahonda, Madrid</li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-line py-6 text-center text-xs text-ink-soft">
+          © {new Date().getFullYear()} Datarecover S.L. Todos los derechos reservados.
+        </div>
+      </footer>
+    </main>
   );
 }

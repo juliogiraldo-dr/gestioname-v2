@@ -6,6 +6,7 @@ import { ToastProvider } from "@/lib/toast";
 import { ConfirmProvider } from "@/lib/confirm";
 import { QueryProvider } from "@/lib/query";
 import { GlobalApiEvents } from "@/components/GlobalApiEvents";
+import { CookieBanner } from "@/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "Gestioname",
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <AuthProvider>
                   <GlobalApiEvents />
                   {children}
+                  <CookieBanner />
                 </AuthProvider>
               </BrandingProvider>
             </ConfirmProvider>

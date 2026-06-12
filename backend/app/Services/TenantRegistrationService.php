@@ -7,9 +7,11 @@ namespace App\Services;
 use App\Models\Plan;
 use App\Models\Tenant;
 use App\Models\TenantModule;
+use App\Notifications\TenantWelcomeNotification;
 use App\Services\Auth\AuthService;
 use App\Support\TenantSchema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 /**
@@ -42,6 +44,7 @@ final class TenantRegistrationService
         int $trialDays = 30,
         string $type = 'ambas',
         string $adminName = 'Administrador',
+        bool $termsAccepted = false,
     ): array {
         $plan = Plan::query()->where('slug', $planSlug)->first();
 
@@ -55,6 +58,7 @@ final class TenantRegistrationService
         $tenant->update([
             'plan_id' => $plan?->id,
             'trial_ends_at' => $trialDays > 0 ? Carbon::now()->addDays($trialDays) : null,
+            'terms_accepted_at' => $termsAccepted ? Carbon::now() : null,
         ]);
 
         // El admin entra por magic link; la contraseña inicial es aleatoria e inutilizable.
@@ -62,9 +66,14 @@ final class TenantRegistrationService
 
         $this->configureModules($subdomain, $type);
 
+        // Email de bienvenida con enlace de acceso (magic link, 24 h) y resumen del plan.
         TenantSchema::use($subdomain);
         try {
-            $this->auth->sendMagicLink($adminEmail, $subdomain);
+            $url = $this->auth->createMagicLinkUrl($adminEmail, $subdomain, 60 * 24);
+            if ($url !== null) {
+                Notification::route('mail', $adminEmail)
+                    ->notify(new TenantWelcomeNotification($name, $url, $plan?->name ?? 'Free', $trialDays));
+            }
         } finally {
             TenantSchema::usePublic();
         }

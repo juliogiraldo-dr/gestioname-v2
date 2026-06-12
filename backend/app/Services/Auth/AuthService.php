@@ -110,6 +110,33 @@ final class AuthService
     }
 
     /**
+     * Crea un magic link y devuelve SOLO el enlace, sin enviar el email genérico
+     * (lo usa el alta de tenant para mandar un email de bienvenida propio).
+     * Devuelve null si el email no existe en el tenant.
+     */
+    public function createMagicLinkUrl(string $email, string $subdomain, int $ttlMinutes = self::MAGIC_LINK_TTL_MINUTES): ?string
+    {
+        $user = User::query()->where('email', $email)->first();
+        if ($user === null) {
+            return null;
+        }
+
+        $plain = Str::random(64);
+        MagicLinkToken::create([
+            'email' => $email,
+            'token_hash' => hash('sha256', $plain),
+            'expires_at' => Carbon::now()->addMinutes($ttlMinutes),
+        ]);
+
+        return sprintf(
+            '%s/auth/magic-link?token=%s&tenant=%s',
+            rtrim((string) config('app.frontend_url'), '/'),
+            urlencode($plain),
+            urlencode($subdomain),
+        );
+    }
+
+    /**
      * Genera un magic link, lo envía por email y DEVUELVE el enlace (para que el
      * super-admin lo copie). Devuelve null si el email no existe en el tenant.
      *

@@ -33,6 +33,7 @@ class Tenant extends Model
         'plan_id',
         'status',
         'trial_ends_at',
+        'terms_accepted_at',
     ];
 
     /**
@@ -40,7 +41,7 @@ class Tenant extends Model
      */
     protected function casts(): array
     {
-        return ['trial_ends_at' => 'datetime'];
+        return ['trial_ends_at' => 'datetime', 'terms_accepted_at' => 'datetime'];
     }
 
     public function isActive(): bool
