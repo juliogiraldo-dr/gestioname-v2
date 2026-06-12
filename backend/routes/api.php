@@ -40,6 +40,7 @@ use App\Http\Controllers\SuperAdmin\DashboardController as SuperAdminDashboardCo
 use App\Http\Controllers\SuperAdmin\PlanController as SuperAdminPlanController;
 use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\SuperAdmin\TenantUserController as SuperAdminTenantUserController;
+use App\Http\Controllers\SuperAdmin\TlsCertificateController;
 use App\Http\Controllers\TenantModuleController;
 use App\Http\Controllers\WorkCalendarController;
 use App\Http\Controllers\WorkCenterController;
@@ -333,6 +334,10 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
 
         // Auditoría.
         Route::get('audit', [SuperAdminAuditController::class, 'index']);
+
+        // Certificado TLS wildcard de la plataforma.
+        Route::get('tls-certificate', [TlsCertificateController::class, 'show']);
+        Route::put('tls-certificate', [TlsCertificateController::class, 'update']);
     });
 
 });

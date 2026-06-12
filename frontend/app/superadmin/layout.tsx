@@ -6,13 +6,14 @@ import { useAuth } from "@/lib/auth";
 import { Sidebar, type NavItem } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Spinner } from "@/components/ui";
-import { BuildingIcon, ChartIcon, EuroIcon, HomeIcon } from "@/components/icons";
+import { BuildingIcon, ChartIcon, EuroIcon, HomeIcon, SettingsIcon } from "@/components/icons";
 
 const NAV: NavItem[] = [
   { href: "/superadmin", label: "Inicio", icon: HomeIcon },
   { href: "/superadmin/tenants", label: "Tenants", icon: BuildingIcon },
   { href: "/superadmin/planes", label: "Planes", icon: EuroIcon },
   { href: "/superadmin/auditoria", label: "Auditoría", icon: ChartIcon },
+  { href: "/superadmin/tls", label: "TLS / Certificado", icon: SettingsIcon },
 ];
 
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
