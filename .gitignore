@@ -37,3 +37,6 @@ backups/
 
 # Coverage
 coverage/
+
+# Secretos del equipo (credenciales de producción — nunca subir)
+docs/team/secretos.md
