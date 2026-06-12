@@ -67,6 +67,33 @@ docker compose up -d          # levanta backend, frontend, postgres, redis, mail
     vuelve a descargar la imagen. Las migraciones y el seed (idempotente) corren solos en
     el arranque del backend, así que un arranque limpio re-siembra el tenant demo.
 
+## Activar el wildcard `*.app.gestioname.es` (paso de infra en el Traefik del borde)
+
+El certificado wildcard ya está subido y validado en el panel (`/superadmin → TLS/Certificado`),
+pero el **Traefik del borde de la plataforma** (deploy.datarecover.cloud) es quien termina el TLS
+de cara a Internet y **no lee** el cert guardado en el backend. Para servir los subdominios de
+tenant hay que instalarlo en ese Traefik (requiere acceso al servidor del deploy):
+
+1. Copiar al host del Traefik del borde el `fullchain.pem` y `privkey.pem` del wildcard
+   (los de Plesk; los mismos que se pegaron en el panel), p. ej. en `/certs/gestioname/`.
+2. Añadir un fichero de **configuración dinámica** de Traefik (file provider), p. ej.
+   `/etc/traefik/dynamic/gestioname.yml`:
+   ```yaml
+   tls:
+     certificates:
+       - certFile: /certs/gestioname/fullchain.pem
+         keyFile:  /certs/gestioname/privkey.pem
+   ```
+   Así Traefik sirve ese cert para cualquier SNI que case `*.app.gestioname.es` o
+   `app.gestioname.es`, sin pedir ACME.
+3. Asegurar el **router** de los subdominios → la app `gestioname` (servicio frontend, :3000),
+   regla `HostRegexp(^.+\.app\.gestioname\.es$)` además del apex `Host(app.gestioname.es)`.
+4. Avisar: entonces, desde el MCP, se cambia `public_hostname` a `*.app.gestioname.es` (+ apex)
+   y se quita `DEFAULT_TENANT` para resolver el tenant solo por subdominio.
+
+> Mientras esto no esté, producción funciona en el **apex `app.gestioname.es`** (tenant demo
+> por `DEFAULT_TENANT`); `demo.app...`/`datarecover.app...` dan error de TLS.
+
 ## Incidencias del despliegue (registrar aquí)
 
 > Si un paso del despliegue por MCP falla, anótalo aquí con fecha y el error, para
