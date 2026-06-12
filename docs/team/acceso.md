@@ -5,10 +5,18 @@
 | Entorno | URL |
 |---|---|
 | Local | http://localhost:3000 |
-| Producción | https://test-julio-gestioname-app.deploy.datarecover.cloud |
+| Producción | https://app.gestioname.es |
+| Plataforma (auto) | https://test-julio-gestioname-app.deploy.datarecover.cloud |
 
-> En producción el tenant de demostración se resuelve por cabecera (`X-Tenant-ID: demo`),
-> a la espera del dominio propio `*.gestioname.app`.
+> **Producción en `app.gestioname.es`** (dominio propio, HTTPS Let's Encrypt). El apex sirve
+> la landing y el tenant **demo** (vía `DEFAULT_TENANT=demo`). Login del equipo:
+> `admin@demo.gestioname.app` / `password`; super-admin `superadmin@demo.gestioname.app` → `/superadmin`.
+>
+> **Subdominios de tenant** (`demo.app.gestioname.es`, `datarecover.app.gestioname.es`):
+> el DNS resuelve, pero la plataforma solo emite certificado para **un** hostname (HTTP-01,
+> sin wildcard), así que esos subdominios aún **no tienen TLS**. Multi-tenant por subdominio
+> queda pendiente de un **certificado wildcard `*.app.gestioname.es`** (DNS-01) en la plataforma.
+> Detalle y pasos en `secretos.md`.
 
 ## Credenciales por rol (tenant demo)
 
