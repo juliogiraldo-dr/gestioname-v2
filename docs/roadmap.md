@@ -8,17 +8,18 @@
 ## Fase 0 · Preparación (2 semanas)
 
 ### Sprint 0 — Infraestructura base
-- [ ] Crear repositorio Git con estructura monorepo (`/backend`, `/frontend`, `/docker`, `/docs`, `/scripts`)
-- [ ] `.gitignore`, `.editorconfig`, `README.md` raíz
-- [ ] `docker-compose.yml` con servicios: php-fpm, nginx, postgres, redis, mailpit
+- [x] Crear repositorio Git con estructura monorepo (`/backend`, `/frontend`, `/docker`, `/docs`, `/scripts`) — `github.com/juliogiraldo-dr/gestioname-v2`, ramas `main` (producción) y `develop` (desarrollo)
+- [x] `.gitignore` (vendor, node_modules, .env, .next, storage, coverage, *.sql.gz), `README.md` raíz
+- [x] `docker-compose.yml` con servicios: php-fpm, nginx, postgres, redis, mailpit
 - [ ] `Makefile` con targets: `up`, `down`, `bash`, `migrate`, `test`, `lint`
-- [ ] Variables de entorno: `.env.example` documentado campo a campo
-- [ ] GitHub Actions: pipeline CI (lint + tests en cada PR)
-- [ ] GitHub Actions: pipeline CD (deploy a staging en merge a `main`)
+- [x] Variables de entorno: `.env.example` documentado campo a campo
+- [x] GitHub Actions: pipeline CI (lint + tests en PR a `develop`/`main`) — `.github/workflows/ci.yml`
+- [x] GitHub Actions: pipeline CD (build + push GHCR + deploy SSH en merge a `main`) — `.github/workflows/deploy.yml`
+- [x] **Dockerfiles de producción**: `docker/php/Dockerfile.prod` (composer `--no-dev`, config/route cache en entrypoint), `docker/node/Dockerfile.prod` (Next `output: standalone`, `node server.js`); `docker-compose.prod.yml` los referencia con volúmenes nombrados `public_assets`/`storage_data`
 - [ ] Traefik configurado en deploy.datarecover.cloud con Let's Encrypt
 - [ ] Dominio `staging.gestioname.app` apuntando al servidor
-- [ ] Scaffolding Laravel 11 en `/backend` con Sanctum, Spatie Permission, DomPDF, PhpSpreadsheet
-- [ ] Scaffolding Next.js 14 en `/frontend` con TypeScript, Tailwind, App Router
+- [x] Scaffolding Laravel 11 en `/backend` con Sanctum, Spatie Permission, DomPDF, PhpSpreadsheet
+- [x] Scaffolding Next.js 14 en `/frontend` con TypeScript, Tailwind, App Router
 - [ ] Primer deploy funcional (homepage Laravel en staging)
 
 ---
