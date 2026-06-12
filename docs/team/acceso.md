@@ -43,7 +43,15 @@ docker compose up -d          # levanta backend, frontend, postgres, redis, mail
 - **Tenant en local**: sin subdominio real, el tenant se fija por `NEXT_PUBLIC_TENANT=demo`
   (cabecera `X-Tenant-ID`).
 
+## Estado del despliegue
+
+- **Producción ACTIVA y verificada**: `GET /health` = `{status: ok}` (BD, Redis, cola) y
+  login del admin demo correcto. Las imágenes desplegadas se fijan al commit (SHA), no a `:latest`.
+- **Aprendizaje**: para actualizar producción, **recrear** la app con las imágenes fijadas al
+  nuevo SHA (un `redeploy` sobre `:latest` no recicla los contenedores ni vuelve a descargar
+  la imagen). Las migraciones y el seed corren solos en el arranque del backend.
+
 ## Incidencias del despliegue (registrar aquí)
 
 > Si un paso del despliegue por MCP falla, anótalo aquí con fecha y el error, para
-> retomarlo. _(Sin incidencias abiertas a fecha de hoy.)_
+> retomarlo. _(Sin incidencias abiertas.)_

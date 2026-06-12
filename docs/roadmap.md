@@ -5,6 +5,45 @@
 
 ---
 
+## Estado actual
+
+### SEMANA ACTUAL ✅ COMPLETADA
+- [x] Bloque 1: Correcciones (fechas dd/MM/yyyy, fichajes presencial/teletrabajo, config por empresa activa, marca blanca real, plantillas de horario en calendario, convenios por centro, festivos por empresa)
+- [x] Bloque 2: Landing completa + onboarding (5 pasos) + páginas legales + emails transaccionales (bienvenida, ausencias, recordatorio de cuota, avisos de trial) + banner de cookies y aceptación legal
+- [x] Bloque 3: Documentación para el equipo (`docs/team/`)
+- [x] Bloque 4: Deploy de producción vía MCP (imágenes GHCR fijadas al SHA, migración + seed en arranque, `GET /health` = ok, login verificado)
+
+### BETA INTERNA — SIGUIENTE SEMANA
+- [ ] Datarecover S.L. como primer tenant real en producción
+- [ ] Fichajes diarios reales del equipo Datarecover
+- [ ] Recogida de bugs con `docs/team/bugs.md`
+- [ ] Corrección de bugs críticos de la beta
+- [ ] DNS `gestioname.app` + wildcard `*.gestioname.app`
+
+### LANZAMIENTO — SEMANA 3
+- [ ] Stripe real (pagos mensuales/anuales + facturas con IVA)
+- [ ] 3-5 clientes beta externos conocidos (precio especial)
+- [ ] Guía de usuario PDF por módulo
+- [ ] Sentry para errores en producción
+- [ ] Uptime check (Better Uptime o similar)
+- [ ] Lanzamiento público con los 4 planes
+
+### FASE 2 (mes 2-3)
+- [ ] Portal del socio PWA (login, cuota, eventos, push)
+- [ ] Módulo Eventos para asociaciones
+- [ ] Organigrama drag-and-drop
+- [ ] Alertas de vencimiento de contratos
+- [ ] App nativa Capacitor (iOS/Android)
+
+### FASE 3 (mes 3-4)
+- [ ] Contabilidad PGC (asientos, libro diario, balance)
+- [ ] Exportación suenlace.dat para a3asesor
+- [ ] Stripe completo con gestión de impagos
+- [ ] Kit Digital (agente digitalizador)
+- [ ] Multiidioma (catalán, euskera, gallego)
+
+---
+
 ## Fase 0 · Preparación (2 semanas)
 
 ### Sprint 0 — Infraestructura base
