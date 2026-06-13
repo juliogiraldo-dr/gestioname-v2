@@ -32,7 +32,7 @@ class Employee extends Model
         'first_name', 'last_name', 'second_last_name', 'treatment', 'dni',
         'birth_date', 'birth_place', 'nationality',
         'clock_code', 'exempt_from_clock',
-        'department', 'job_position', 'job_category', 'employment_status', 'hire_date',
+        'department', 'job_position', 'job_category', 'employment_status', 'hire_date', 'contract_end_date',
         'email_company', 'phone_company', 'mobile_company',
         'email_personal', 'phone_personal', 'address', 'postal_code', 'city', 'province',
         'iban', 'vehicle_plate', 'photo_path', 'notes', 'active',
@@ -51,6 +51,7 @@ class Employee extends Model
             'iban' => 'encrypted',
             'birth_date' => 'date:Y-m-d',
             'hire_date' => 'date:Y-m-d',
+            'contract_end_date' => 'date:Y-m-d',
             'exempt_from_clock' => 'boolean',
             'active' => 'boolean',
         ];

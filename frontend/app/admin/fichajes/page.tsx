@@ -20,6 +20,14 @@ type Attendance = {
 const time = (iso: string) => formatTime(iso);
 const MODE_LABEL: Record<string, string> = { presencial: "Oficina", teletrabajo: "Teletrabajo" };
 
+/** Suma días a una fecha YYYY-MM-DD usando UTC, evitando desfases de zona horaria. */
+function shiftDate(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
 export default function FichajesPage() {
   const today = new Date().toISOString().slice(0, 10);
   const company = useActiveCompany();
@@ -91,6 +99,10 @@ export default function FichajesPage() {
         <div className="flex flex-wrap items-end gap-3">
           <SelectField label="Centro" value={centerId} onChange={setCenterId} options={[["", "Todos"], ...centers.map((c) => [c.id, c.name] as const)]} />
           <TextField label="Fecha" type="date" value={date} onChange={setDate} />
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setDate((d) => shiftDate(d, -1))}>← Día anterior</Button>
+            <Button variant="secondary" onClick={() => setDate((d) => shiftDate(d, 1))}>Día siguiente →</Button>
+          </div>
         </div>
       </Card>
 

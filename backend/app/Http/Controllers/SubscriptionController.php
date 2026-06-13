@@ -6,12 +6,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\Tenant;
+use App\Notifications\UpgradeRequestNotification;
 use App\Services\PlanLimitService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class SubscriptionController extends Controller
 {
     private const RESOURCES = ['companies', 'employees', 'entities', 'members', 'users'];
+
+    private const CONTACT_EMAIL = 'info@datarecover.es';
 
     public function __construct(private readonly PlanLimitService $limits) {}
 
@@ -40,5 +45,24 @@ class SubscriptionController extends Controller
             'plans' => Plan::query()->where('is_public', true)->orderBy('price_monthly')
                 ->get(['name', 'slug', 'price_monthly', 'price_yearly', 'limits', 'modules_allowed']),
         ]]);
+    }
+
+    /** Solicitud de cambio de plan: envía un email a Datarecover. */
+    public function requestUpgrade(Request $request): JsonResponse
+    {
+        /** @var Tenant $tenant */
+        $tenant = app('tenant');
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+            'plan' => ['required', 'string', 'max:100'],
+        ]);
+
+        Notification::route('mail', self::CONTACT_EMAIL)->notify(
+            new UpgradeRequestNotification($tenant->name, $data['name'], $data['email'], $data['plan'])
+        );
+
+        return response()->json(['message' => 'Solicitud enviada. Te contactaremos en breve.']);
     }
 }

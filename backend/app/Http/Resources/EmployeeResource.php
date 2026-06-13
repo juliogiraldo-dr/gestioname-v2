@@ -39,6 +39,7 @@ class EmployeeResource extends JsonResource
             'job_category' => $this->job_category,
             'employment_status' => $this->employment_status,
             'hire_date' => $this->hire_date?->toDateString(),
+            'contract_end_date' => $this->contract_end_date?->toDateString(),
             'email_company' => $this->email_company,
             'phone_company' => $this->phone_company,
             'mobile_company' => $this->mobile_company,

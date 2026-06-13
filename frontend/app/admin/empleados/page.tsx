@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, downloadFile, uploadFile } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
@@ -21,15 +22,27 @@ type Employee = {
 
 const ESTADOS = [["", "Todos"], ["1", "Activos"], ["0", "Inactivos"]] as const;
 
+type ExpiringContracts = { count: number; employees: { id: string; full_name: string; contract_end_date: string }[] };
+
 export default function EmpleadosPage() {
+  return (
+    <Suspense fallback={<Skeleton rows={5} />}>
+      <EmpleadosContent />
+    </Suspense>
+  );
+}
+
+function EmpleadosContent() {
   const company = useActiveCompany();
   const companies = company?.companies ?? [];
   const companyId = company?.activeId ?? "";
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
   const [department, setDepartment] = useState("");
   const [estado, setEstado] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<string | null>(null);
+  // Abrir directamente la ficha de un empleado si llega ?employee=<id> (p. ej. desde el organigrama).
+  const [selected, setSelected] = useState<string | null>(() => searchParams.get("employee"));
   const [modal, setModal] = useState<"create" | "invite" | null>(null);
 
   const query = useQuery({
@@ -42,6 +55,13 @@ export default function EmpleadosPage() {
       return api<Paginated<Employee>>(`/employees?${params}`);
     },
   });
+
+  const expiringQuery = useQuery({
+    queryKey: ["contracts-expiring", companyId],
+    enabled: !!companyId,
+    queryFn: () => api<{ data: ExpiringContracts }>(`/employees/contracts-expiring?days=30&company_id=${companyId}`),
+  });
+  const expiringCount = expiringQuery.data?.data.count ?? 0;
 
   const refresh = useCallback(() => { void queryClient.invalidateQueries({ queryKey: ["employees"] }); }, [queryClient]);
   const employees = query.data?.data ?? [];
@@ -72,6 +92,13 @@ export default function EmpleadosPage() {
           </div>
         }
       />
+
+      {expiringCount > 0 && (
+        <div className="flex items-center gap-2 rounded-[var(--radius-fluent)] border border-line bg-amber-50 px-4 py-3">
+          <Badge tone="warn">{expiringCount} contrato(s) próximo(s) a vencer</Badge>
+          <span className="text-sm text-ink-soft">en los próximos 30 días.</span>
+        </div>
+      )}
 
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
@@ -225,7 +252,8 @@ const PERSONAL_FIELDS: ReadonlyArray<readonly [string, string, string?]> = [
 
 const LABORAL_FIELDS: ReadonlyArray<readonly [string, string, string?]> = [
   ["department", "Departamento"], ["job_position", "Puesto"], ["job_category", "Categoría"],
-  ["hire_date", "Fecha de alta", "date"], ["clock_code", "Código de fichaje"],
+  ["hire_date", "Fecha de alta", "date"], ["contract_end_date", "Fin de contrato", "date"],
+  ["clock_code", "Código de fichaje"],
   ["email_company", "Email empresa"], ["phone_company", "Teléfono empresa"],
 ];
 
@@ -260,9 +288,10 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
     setError(null); setSaving(true);
     try {
       const payload: Record<string, unknown> = {};
-      for (const [k] of [...PERSONAL_FIELDS, ...LABORAL_FIELDS]) payload[k] = emp[k] ?? null;
+      for (const [k] of [...PERSONAL_FIELDS, ...LABORAL_FIELDS]) payload[k] = emp[k] === "" ? null : (emp[k] ?? null);
       payload.work_center_id = emp.work_center_id ?? null;
       payload.agreement_id = emp.agreement_id ?? null;
+      payload.contract_end_date = emp.contract_end_date ?? null;
       await api(`/employees/${employeeId}`, { method: "PUT", body: payload });
       toast.success("Cambios guardados.");
       onChanged();

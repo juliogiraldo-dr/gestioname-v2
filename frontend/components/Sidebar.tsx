@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { useBranding } from "@/lib/branding";
-import { BuildingIcon, CalendarIcon, ClockIcon, DocIcon, HomeIcon, LeaveIcon, NewsIcon, UsersIcon } from "./icons";
+import { BuildingIcon, CalendarIcon, ClockIcon, DocIcon, EuroIcon, HomeIcon, LeaveIcon, NewsIcon, UsersIcon } from "./icons";
 
 export type NavItem = {
   href: string;
@@ -22,6 +22,11 @@ const PORTAL_NAV: NavItem[] = [
   { href: "/portal/nominas", label: "Mis nóminas", icon: DocIcon },
   { href: "/portal/documentos", label: "Documentos", icon: DocIcon },
   { href: "/portal/noticias", label: "Noticias", icon: NewsIcon },
+];
+
+// Navegación mínima del socio (rol "member"): solo su cuota, en modo lectura.
+export const MEMBER_NAV: NavItem[] = [
+  { href: "/portal/socio", label: "Mi cuota", icon: EuroIcon },
 ];
 
 export function Sidebar({

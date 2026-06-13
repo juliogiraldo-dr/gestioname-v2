@@ -19,6 +19,8 @@ export default function Home() {
     else if (profile.roles.some((r) => ADMIN_ROLES.includes(r))) router.replace("/admin");
     // La gestoría externa solo accede a su panel (nóminas/descargas e informes).
     else if (profile.roles.includes("gestoria")) router.replace("/admin/gestoria");
+    // El socio (sin perfil de empleado/admin/gestoría) va a su portal de cuota.
+    else if (profile.roles.includes("member")) router.replace("/portal/socio");
     else router.replace("/portal");
   }, [loading, profile, router]);
 

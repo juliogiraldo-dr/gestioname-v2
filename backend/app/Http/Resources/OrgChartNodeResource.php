@@ -26,8 +26,13 @@ class OrgChartNodeResource extends JsonResource
             'receives_notifications' => $this->receives_notifications,
             'sort_order' => $this->sort_order,
             'employee' => $this->whenLoaded('employee', fn () => [
-                'id' => $this->employee->id, 'name' => $this->employee->fullName(),
+                'id' => $this->employee->id,
+                'name' => $this->employee->fullName(),
+                'job_position' => $this->employee->job_position,
+                'department' => $this->employee->department,
+                'has_photo' => $this->employee->photo_path !== null,
             ]),
+            'subordinates' => $this->whenLoaded('children', fn () => $this->children->count()),
             'children' => OrgChartNodeResource::collection($this->whenLoaded('children')),
         ];
     }

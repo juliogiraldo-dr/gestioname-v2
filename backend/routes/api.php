@@ -177,6 +177,7 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         // parámetro {employee} no capture 'template'/'invite'/'import'.
         Route::get('employees/template', [EmployeeController::class, 'template']);
         Route::get('employees/export', [EmployeeController::class, 'export']);
+        Route::get('employees/contracts-expiring', [EmployeeController::class, 'expiringContracts']);
         Route::post('employees/invite', [EmployeeController::class, 'invite'])->middleware('plan.limit:employees');
         Route::post('employees/import', [EmployeeController::class, 'import'])->middleware('plan.limit:employees');
         Route::patch('employees/{employee}/activate', [EmployeeController::class, 'activate']);
@@ -236,6 +237,9 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::post('avatar', [MeController::class, 'uploadAvatar']);
         Route::get('avatar', [MeController::class, 'avatar']);
         Route::get('labor', [MeController::class, 'laborData']);
+        // Portal del socio (solo lectura).
+        Route::get('member', [MeController::class, 'member']);
+        Route::get('member/payments', [MeController::class, 'memberPayments']);
     });
 
     // Organigrama (gestores).
@@ -252,6 +256,8 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         ->get('tenant-modules', [TenantModuleController::class, 'index']);
     Route::middleware(['auth:sanctum', 'role:admin|super-admin|rrhh-coordinator'])
         ->get('subscription', [SubscriptionController::class, 'show']);
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin'])
+        ->post('subscription/upgrade-request', [SubscriptionController::class, 'requestUpgrade']);
     Route::middleware(['auth:sanctum', 'role:admin|super-admin'])
         ->patch('tenant-modules/{key}', [TenantModuleController::class, 'update']);
 

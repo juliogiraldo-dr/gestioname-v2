@@ -40,6 +40,7 @@ class UpdateEmployeeRequest extends FormRequest
             'job_category' => ['nullable', 'string', 'max:100'],
             'employment_status' => ['nullable', 'in:active,inactive,leave'],
             'hire_date' => ['nullable', 'date'],
+            'contract_end_date' => ['nullable', 'date'],
             'email_company' => ['nullable', 'email', 'max:255'],
             'phone_company' => ['nullable', 'string', 'max:20'],
             'mobile_company' => ['nullable', 'string', 'max:20'],

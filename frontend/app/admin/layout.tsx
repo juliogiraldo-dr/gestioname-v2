@@ -31,6 +31,7 @@ const ALL_NAV: GatedNavItem[] = [
   { href: "/admin", label: "Inicio", icon: HomeIcon },
   { href: "/admin/configuracion", label: "Configuración", icon: SettingsIcon },
   { href: "/admin/empleados", label: "Empleados", icon: UsersIcon, module: "rrhh" },
+  { href: "/admin/organigrama", label: "Organigrama", icon: UsersIcon, module: "rrhh" },
   { href: "/admin/fichajes", label: "Fichajes", icon: ClockIcon, module: "rrhh" },
   { href: "/admin/ausencias", label: "Ausencias", icon: LeaveIcon, module: "rrhh" },
   { href: "/admin/gestoria", label: "Gestoría", icon: DocIcon, module: "rrhh" },

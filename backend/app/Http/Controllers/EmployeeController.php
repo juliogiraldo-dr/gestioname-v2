@@ -46,6 +46,33 @@ class EmployeeController extends Controller
         return EmployeeResource::collection($employees);
     }
 
+    /** Contratos activos que vencen en los próximos N días (por defecto 30). Para el aviso del listado. */
+    public function expiringContracts(Request $request): JsonResponse
+    {
+        $days = $request->integer('days') ?: 30;
+        $limit = now()->startOfDay()->addDays($days)->toDateString();
+
+        $employees = Employee::query()
+            ->where('active', true)
+            ->whereNotNull('contract_end_date')
+            ->whereDate('contract_end_date', '>=', now()->toDateString())
+            ->whereDate('contract_end_date', '<=', $limit)
+            ->when($request->filled('company_id'), fn ($q) => $q->where('company_id', $request->string('company_id')))
+            ->orderBy('contract_end_date')
+            ->get(['id', 'first_name', 'last_name', 'second_last_name', 'contract_end_date']);
+
+        return response()->json([
+            'data' => [
+                'count' => $employees->count(),
+                'employees' => $employees->map(fn (Employee $e) => [
+                    'id' => $e->id,
+                    'full_name' => $e->fullName(),
+                    'contract_end_date' => $e->contract_end_date?->toDateString(),
+                ])->values(),
+            ],
+        ]);
+    }
+
     public function store(StoreEmployeeRequest $request): JsonResponse
     {
         $employee = $this->service->create($request->validated());

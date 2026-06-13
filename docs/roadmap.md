@@ -13,6 +13,15 @@
 - [x] Bloque 3: Documentación para el equipo (`docs/team/`)
 - [x] Bloque 4: Deploy de producción vía MCP (imágenes GHCR fijadas al SHA, migración + seed en arranque, `GET /health` = ok, login verificado)
 
+### CONTABILIDAD + FEATURES MENORES ✅ COMPLETADA
+- [x] Módulo **Contabilidad** simplificado: plan de cuentas, asientos (con cuadre), periodos fiscales, informes (balance de situación, cuenta de resultados, balance de comprobación, mayor); UI `/admin/contabilidad` gateada por módulo
+- [x] **Exportación a3asesor** (`suenlace.dat`, CP850) desde `/admin/gestoria`
+- [x] **Portal del socio** (rol `member`, solo lectura): cuota del año, histórico y datos de la entidad (`/portal/socio`)
+- [x] **Alertas de vencimiento de contratos**: `contract_end_date`, comando diario `alerts:contracts` (30 y 7 días) y aviso en `/admin/empleados`
+- [x] **Organigrama** con avatar, cargo, departamento, nº de subordinados y nodos clicables a la ficha
+- [x] **Suscripción** mejorada: tabla comparativa de planes (mensual/anual con ahorro) + solicitud de upgrade por email
+- [x] Fichajes: navegación por día (← anterior / siguiente →)
+
 ### BETA INTERNA — SIGUIENTE SEMANA
 - [ ] Datarecover S.L. como primer tenant real en producción
 - [ ] Fichajes diarios reales del equipo Datarecover
@@ -29,15 +38,15 @@
 - [ ] Lanzamiento público con los 4 planes
 
 ### FASE 2 (mes 2-3)
-- [ ] Portal del socio PWA (login, cuota, eventos, push)
+- [x] Portal del socio (cuota, histórico, datos de entidad) — falta PWA/eventos/push
 - [ ] Módulo Eventos para asociaciones
-- [ ] Organigrama drag-and-drop
-- [ ] Alertas de vencimiento de contratos
+- [~] Organigrama (visor enriquecido + alta/baja de nodos hecho; falta drag-and-drop)
+- [x] Alertas de vencimiento de contratos
 - [ ] App nativa Capacitor (iOS/Android)
 
 ### FASE 3 (mes 3-4)
-- [ ] Contabilidad PGC (asientos, libro diario, balance)
-- [ ] Exportación suenlace.dat para a3asesor
+- [x] Contabilidad básica (asientos, mayor, balance, cuenta de resultados) — no es PGC completo
+- [x] Exportación suenlace.dat para a3asesor
 - [ ] Stripe completo con gestión de impagos
 - [ ] Kit Digital (agente digitalizador)
 - [ ] Multiidioma (catalán, euskera, gallego)

@@ -10,6 +10,7 @@ use App\Http\Resources\LeaveRequestResource;
 use App\Models\Attendance;
 use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\Member;
 use App\Models\Payslip;
 use App\Services\LeaveRequestService;
 use Illuminate\Http\JsonResponse;
@@ -260,6 +261,67 @@ class MeController extends Controller
                 'calendar' => $calendar->name,
             ],
         ]]);
+    }
+
+    /** Datos del socio vinculado al usuario autenticado (portal del socio, solo lectura). */
+    public function member(Request $request): JsonResponse
+    {
+        $member = $this->memberFor($request);
+
+        return response()->json(['data' => [
+            'id' => $member->id,
+            'full_name' => $member->fullName(),
+            'member_number' => $member->member_number,
+            'status' => $member->status,
+            'email' => $member->email,
+            'phone' => $member->phone,
+            'member_type' => $member->memberType?->name,
+            'entity' => $member->entity === null ? null : [
+                'name' => $member->entity->name,
+                'type' => $member->entity->type,
+                'email' => $member->entity->email,
+                'phone' => $member->entity->phone,
+            ],
+        ]]);
+    }
+
+    /** Pagos de cuota del socio (año actual y 2 anteriores). */
+    public function memberPayments(Request $request): JsonResponse
+    {
+        $member = $this->memberFor($request);
+        $from = (int) now()->year - 2;
+
+        $payments = $member->payments()
+            ->where('year', '>=', $from)
+            ->orderByDesc('year')
+            ->get()
+            ->map(fn ($p) => [
+                'year' => $p->year,
+                'amount' => $p->amount,
+                'status' => $p->status,
+                'payment_date' => $p->payment_date?->toDateString(),
+                'payment_method' => $p->payment_method,
+            ]);
+
+        return response()->json(['data' => $payments]);
+    }
+
+    /**
+     * Socio vinculado al usuario autenticado.
+     *
+     * @throws BusinessException si el usuario no tiene ficha de socio.
+     */
+    private function memberFor(Request $request): Member
+    {
+        $member = Member::where('user_id', $request->user()->id)
+            ->with(['entity', 'memberType'])
+            ->first();
+
+        if ($member === null) {
+            throw new BusinessException('El usuario no tiene ficha de socio.', 'NO_MEMBER_PROFILE', 404);
+        }
+
+        return $member;
     }
 
     /**
