@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Plan;
 use App\Models\Tenant;
 use App\Services\TenantRegistrationService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,17 @@ class RegisterController extends Controller
     private const RESERVED = ['www', 'admin', 'api', 'app', 'mail', 'staging', 'static', 'assets', 'superadmin'];
 
     public function __construct(private readonly TenantRegistrationService $registration) {}
+
+    /** Planes públicos para la landing (precios reales). Sin auth ni tenant. */
+    public function plans(): JsonResponse
+    {
+        return response()->json([
+            'data' => Plan::query()
+                ->where('is_public', true)
+                ->orderBy('price_monthly')
+                ->get(['name', 'slug', 'price_monthly', 'price_yearly', 'limits', 'modules_allowed']),
+        ]);
+    }
 
     /** Comprobación en tiempo real de disponibilidad de subdominio. */
     public function checkSubdomain(Request $request): JsonResponse

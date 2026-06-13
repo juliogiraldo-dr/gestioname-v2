@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { useBranding } from "@/lib/branding";
+import { useActiveCompany } from "@/lib/company";
 import { BuildingIcon, CalendarIcon, ClockIcon, DocIcon, EuroIcon, HomeIcon, LeaveIcon, NewsIcon, UsersIcon } from "./icons";
 
 export type NavItem = {
@@ -42,6 +43,23 @@ export function Sidebar({
 } = {}) {
   const pathname = usePathname();
   const { app_name, logo_path } = useBranding();
+  const company = useActiveCompany();
+
+  // Selector de empresa solo en móvil (<640px); en sm+ va en el header (#014).
+  const companySelect = company && company.companies.length > 1 ? (
+    <div className="mb-4 px-2 sm:hidden">
+      <span className="mb-1 block text-xs text-ink-soft">Empresa</span>
+      <select
+        value={company.activeId}
+        onChange={(e) => company.setActiveId(e.target.value)}
+        className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-2 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
+      >
+        {company.companies.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+    </div>
+  ) : null;
 
   const brand = (
     <div className="mb-6 flex items-center gap-2.5 px-2">
@@ -92,6 +110,7 @@ export function Sidebar({
           <div className="absolute inset-0 bg-primary/30 backdrop-blur-sm" onClick={onClose} />
           <aside className="absolute left-0 top-0 flex h-full w-64 flex-col border-r border-line bg-surface px-3 py-5 shadow-[var(--shadow-fluent-lg)]">
             {brand}
+            {companySelect}
             {nav}
           </aside>
         </div>

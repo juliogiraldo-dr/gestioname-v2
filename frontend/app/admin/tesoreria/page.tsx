@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, Modal, PageHeader, SelectField, Spinner, StatCard, TextField } from "@/components/ui";
 import { DateInput } from "@/components/DateInput";
 
@@ -101,7 +102,7 @@ export default function TesoreriaPage() {
                 <tbody className="divide-y divide-line">
                   {expenses.map((x) => (
                     <tr key={x.id}>
-                      <td className="px-5 py-3 text-ink-soft">{x.date}</td>
+                      <td className="px-5 py-3 text-ink-soft">{formatDate(x.date)}</td>
                       <td className="px-5 py-3 text-ink">{x.description}</td>
                       <td className="px-5 py-3 text-ink-soft">{x.category?.name ?? "—"}</td>
                       <td className="px-5 py-3 text-right font-medium text-ink">{eur(x.amount)}</td>

@@ -66,6 +66,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('register/check-subdomain', [RegisterController::class, 'checkSubdomain']);
     Route::post('register', [RegisterController::class, 'register'])->middleware('throttle:10,1');
+    Route::get('plans', [RegisterController::class, 'plans']);
 
     // Logo de marca blanca: público y resuelto por id de tenant en la ruta (lo usa <img>
     // antes de autenticar y desde cualquier origen, sin cabecera de tenant).
@@ -95,6 +96,7 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
     Route::get('download/{token}', [PublicDownloadController::class, 'show'])->middleware('throttle:60,1');
 
     // Fichaje por PIN: público dentro del tenant (kiosk/web/móvil sin sesión).
+    Route::get('kiosk/options', [AttendanceController::class, 'kioskOptions']);
     Route::post('attendance/identify', [AttendanceController::class, 'identify'])->middleware('throttle:60,1');
     Route::post('attendance/clock', [AttendanceController::class, 'clock'])->middleware('throttle:60,1');
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api, uploadFile, downloadFile, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
@@ -242,6 +242,7 @@ function UploadModal({
   const [year, setYear] = useState(String(now.getFullYear()));
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function submit() {
     if (!file) {
@@ -282,11 +283,20 @@ function UploadModal({
         </div>
         <Field label="Archivo PDF">
           <input
+            ref={fileInputRef}
             type="file"
             accept="application/pdf"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-ink-soft file:mr-3 file:rounded-[var(--radius-fluent)] file:border-0 file:bg-secondary/15 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary"
+            className="hidden"
           />
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => fileInputRef.current?.click()}>
+              Seleccionar PDF
+            </Button>
+            <span className="truncate text-sm text-ink-soft">
+              {file ? file.name : "Ningún archivo seleccionado"}
+            </span>
+          </div>
         </Field>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>

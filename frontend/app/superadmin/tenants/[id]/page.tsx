@@ -18,7 +18,7 @@ type TUser = { id: string; name: string; email: string; roles: string[]; active:
 type Audit = { id: number; action: string; actor: string | null; details: Record<string, unknown>; created_at: string };
 
 const LIMIT_KEYS = ["companies", "employees", "entities", "members", "users"] as const;
-const ROLES = ["admin", "rrhh-coordinator", "operator", "employee", "member"] as const;
+const ROLES = ["admin", "gestoria", "rrhh-coordinator", "operator", "employee", "member"] as const;
 const STATUS_TONES: Record<string, "ok" | "warn" | "neutral"> = { active: "ok", trial: "warn", suspended: "neutral", cancelled: "neutral" };
 const fmtDateTime = (iso: string | null) => (iso ? formatDateTime(iso) : "Nunca");
 

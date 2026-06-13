@@ -42,8 +42,9 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
           </button>
         )}
         <div className="text-sm font-semibold text-primary md:hidden">{app_name}</div>
+        {/* En móvil (<640px) el selector de empresa se muestra en el sidebar (ver #014). */}
         {company && company.companies.length > 1 && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className="hidden items-center gap-2 text-sm sm:flex">
             <span className="hidden text-ink-soft sm:inline">Empresa:</span>
             <select
               value={company.activeId}
@@ -58,7 +59,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
         )}
       </div>
       <div className="ml-auto flex items-center gap-4">
-        <div className="text-right">
+        <div className="hidden text-right sm:block">
           <p className="text-sm font-medium text-ink">{profile?.name}</p>
           {role && <p className="text-xs text-ink-soft">{ROLE_LABELS[role] ?? role}</p>}
         </div>

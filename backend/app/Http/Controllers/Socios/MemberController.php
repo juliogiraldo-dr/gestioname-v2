@@ -31,8 +31,9 @@ class MemberController extends Controller
                     ->orWhere('member_number', 'like', $term));
             })
             ->with('memberType')
+            // Orden por nº de socio ascendente (numérico: longitud primero para que 2 < 10).
+            ->orderByRaw('LENGTH(member_number) ASC, member_number ASC')
             ->orderBy('last_name')
-            ->orderBy('first_name')
             ->paginate(20);
 
         return MemberResource::collection($members);

@@ -174,8 +174,8 @@ function CreateEmployee({ companies, onClose, onSaved }: { companies: Company[];
     <Modal title="Nuevo empleado" onClose={onClose}>
       <div className="grid gap-3 sm:grid-cols-2">
         <SelectField label="Empresa" value={form.company_id} onChange={(v) => set("company_id", v)} options={companies.map((c) => [c.id, c.name] as const)} />
-        <TextField label="Nombre" value={form.first_name} onChange={(v) => set("first_name", v)} />
-        <TextField label="Apellidos" value={form.last_name} onChange={(v) => set("last_name", v)} />
+        <TextField label="Nombre *" value={form.first_name} onChange={(v) => set("first_name", v)} />
+        <TextField label="Apellidos *" value={form.last_name} onChange={(v) => set("last_name", v)} />
         <TextField label="Email personal" value={form.email_personal} onChange={(v) => set("email_personal", v)} />
         <TextField label="Departamento" value={form.department} onChange={(v) => set("department", v)} />
         <TextField label="Puesto" value={form.job_position} onChange={(v) => set("job_position", v)} />
@@ -186,7 +186,7 @@ function CreateEmployee({ companies, onClose, onSaved }: { companies: Company[];
       </div>
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
       <div className="mt-4 flex gap-2">
-        <Button onClick={submit} disabled={busy || !form.company_id || !form.first_name || !form.last_name || !!codeError}>{busy ? "Creando…" : "Crear"}</Button>
+        <Button onClick={submit} disabled={busy || !form.company_id || !form.first_name.trim() || !form.last_name.trim() || !!codeError}>{busy ? "Creando…" : "Crear"}</Button>
         <Button variant="ghost" onClick={onClose}>Cancelar</Button>
       </div>
     </Modal>

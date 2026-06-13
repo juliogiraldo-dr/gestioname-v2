@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { formatTime } from "@/lib/utils";
+import { SelectField } from "@/components/ui";
 
 type Config = { entrada: string; salida: string };
 type Feedback = { kind: "ok" | "error"; text: string } | null;
@@ -186,29 +187,92 @@ export function Kiosk() {
   );
 }
 
+type KioskMilestone = { id: string; name: string; type: string };
+type KioskCompany = { id: string; name: string; milestones: KioskMilestone[] };
+
 function KioskSetup({ onSave }: { onSave: (c: Config) => void }) {
+  const [companies, setCompanies] = useState<KioskCompany[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState("");
   const [entrada, setEntrada] = useState("");
   const [salida, setSalida] = useState("");
+
+  // Carga las empresas y sus hitos para elegirlos en lugar de pegar UUIDs.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const res = await api<{ data: KioskCompany[] }>("/kiosk/options", { auth: false });
+        if (!active) return;
+        setCompanies(res.data);
+        if (res.data.length > 0) setCompanyId(res.data[0].id);
+      } catch {
+        if (active) setLoadError("No se pudieron cargar las empresas. Inténtalo de nuevo más tarde.");
+      }
+    })();
+    return () => { active = false; };
+  }, []);
+
+  const company = companies?.find((c) => c.id === companyId) ?? null;
+  const milestones = company?.milestones ?? [];
+  // Prioriza los hitos del tipo correspondiente; si no hay, ofrece todos.
+  const byType = (type: string) => {
+    const matching = milestones.filter((m) => m.type === type);
+    return matching.length > 0 ? matching : milestones;
+  };
+  const toOptions = (list: KioskMilestone[]): ReadonlyArray<readonly [string, string]> =>
+    [["", "Selecciona un hito"] as const, ...list.map((m) => [m.id, m.name] as const)];
+
+  function pickCompany(id: string) {
+    setCompanyId(id);
+    setEntrada("");
+    setSalida("");
+  }
 
   return (
     <main className="flex min-h-full items-center justify-center px-4">
       <div className="w-full max-w-md rounded-[var(--radius-fluent)] border border-line bg-surface p-6 shadow-[var(--shadow-fluent)]">
         <h1 className="text-lg font-semibold text-primary">Configurar reloj</h1>
         <p className="mt-1 mb-5 text-sm text-ink-soft">
-          Pega los identificadores de los hitos ENTRADA y SALIDA de esta empresa (los obtiene el administrador en Configuración → Hitos).
+          Elige la empresa y los hitos de ENTRADA y SALIDA que usará este reloj de fichaje.
         </p>
-        <div className="space-y-3">
-          <input value={entrada} onChange={(e) => setEntrada(e.target.value)} placeholder="ID hito ENTRADA"
-            className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary" />
-          <input value={salida} onChange={(e) => setSalida(e.target.value)} placeholder="ID hito SALIDA"
-            className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary" />
-          <button
-            onClick={() => { const c = { entrada, salida }; window.localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); onSave(c); }}
-            disabled={!entrada || !salida}
-            className="w-full rounded-[var(--radius-fluent)] bg-primary py-2.5 text-sm font-medium text-white disabled:opacity-50">
-            Guardar
-          </button>
-        </div>
+
+        {loadError ? (
+          <p className="text-sm text-red-600">{loadError}</p>
+        ) : companies === null ? (
+          <p className="text-sm text-ink-soft">Cargando…</p>
+        ) : companies.length === 0 ? (
+          <p className="text-sm text-ink-soft">
+            No hay empresas con hitos configurados. El administrador debe crearlos en Configuración → Hitos.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <SelectField
+              label="Empresa"
+              value={companyId}
+              onChange={pickCompany}
+              options={companies.map((c) => [c.id, c.name] as const)}
+            />
+            <SelectField
+              label="Hito de ENTRADA"
+              value={entrada}
+              onChange={setEntrada}
+              options={toOptions(byType("entrada"))}
+            />
+            <SelectField
+              label="Hito de SALIDA"
+              value={salida}
+              onChange={setSalida}
+              options={toOptions(byType("salida"))}
+            />
+            <button
+              onClick={() => { const c = { entrada, salida }; window.localStorage.setItem(CONFIG_KEY, JSON.stringify(c)); onSave(c); }}
+              disabled={!entrada || !salida}
+              className="w-full rounded-[var(--radius-fluent)] bg-primary py-2.5 text-sm font-medium text-white disabled:opacity-50">
+              Guardar
+            </button>
+          </div>
+        )}
       </div>
     </main>
   );

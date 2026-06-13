@@ -12,6 +12,7 @@ use App\Http\Requests\Attendance\ManualAttendanceRequest;
 use App\Http\Resources\AttendanceCorrectionResource;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
+use App\Models\Company;
 use App\Models\Employee;
 use App\Services\AttendanceService;
 use Illuminate\Http\JsonResponse;
@@ -38,6 +39,26 @@ class AttendanceController extends Controller
         return AttendanceResource::make($attendance->load(['employee', 'milestone']))
             ->response()
             ->setStatusCode(201);
+    }
+
+    /**
+     * Opciones de configuración del kiosk: empresas del tenant con sus hitos
+     * (id, nombre, tipo) para elegir entrada/salida con nombres legibles. Público en el tenant.
+     */
+    public function kioskOptions(): JsonResponse
+    {
+        $companies = Company::query()
+            ->with(['milestones' => fn ($q) => $q->where('active', true)->orderBy('name')])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json(['data' => $companies->map(fn ($c) => [
+            'id' => $c->id,
+            'name' => $c->name,
+            'milestones' => $c->milestones->map(fn ($m) => [
+                'id' => $m->id, 'name' => $m->name, 'type' => $m->type,
+            ])->values(),
+        ])]);
     }
 
     /** Identifica al empleado por su código de fichaje (kiosk: muestra el nombre antes de fichar). */

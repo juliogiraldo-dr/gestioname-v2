@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import Link from "next/link";
 import { useBranding } from "@/lib/branding";
 import { Badge } from "@/components/ui";
@@ -42,6 +43,7 @@ const STEPS: ReadonlyArray<{ n: string; title: string; desc: string }> = [
 ];
 
 type Plan = {
+  slug: string;
   name: string;
   monthly: number;
   annual: number; // precio mensual facturando anual
@@ -49,33 +51,52 @@ type Plan = {
   highlight?: boolean;
 };
 
+// Valores REALES de respaldo (precio mensual en euros) si la API no responde.
 const PLANS: ReadonlyArray<Plan> = [
   {
+    slug: "free",
     name: "Free",
     monthly: 0,
     annual: 0,
     features: ["Hasta 5 empleados", "Fichaje y control de jornada", "1 empresa o entidad"],
   },
   {
+    slug: "starter",
     name: "Starter",
-    monthly: 19,
-    annual: 15,
+    monthly: 9.9,
+    annual: 9.9,
     features: ["Hasta 15 empleados", "Ausencias y vacaciones", "Portal del empleado", "Exportación a Excel"],
   },
   {
+    slug: "professional",
     name: "Professional",
-    monthly: 49,
-    annual: 39,
+    monthly: 19.9,
+    annual: 19.9,
     highlight: true,
     features: ["Hasta 50 empleados", "Socios y asociaciones", "Tesorería", "Informes avanzados", "Soporte prioritario"],
   },
   {
+    slug: "business",
     name: "Business",
-    monthly: 99,
-    annual: 79,
+    monthly: 39.9,
+    annual: 39.9,
     features: ["Empleados ilimitados", "Multi-empresa y multi-entidad", "Enlace contable a3asesor", "Marca blanca", "Acceso para tu gestoría"],
   },
 ];
+
+type ApiPlan = {
+  name: string;
+  slug: string;
+  price_monthly: number | string;
+  price_yearly: number | string;
+};
+
+/** Precio mensual formateado en euros (p. ej. "9,90 €" o "0 €"). */
+function formatEuro(value: number): string {
+  return value % 1 === 0
+    ? `${value} €`
+    : `${value.toFixed(2).replace(".", ",")} €`;
+}
 
 const FAQ: ReadonlyArray<{ q: string; a: string }> = [
   {
@@ -129,6 +150,37 @@ const USE_CASES: ReadonlyArray<{
 export function Landing() {
   const { app_name } = useBranding();
   const [annual, setAnnual] = useState(true);
+  // Empieza con los valores de respaldo y los sustituye por los reales de la API al montar.
+  const [plans, setPlans] = useState<ReadonlyArray<Plan>>(PLANS);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const res = await api<{ data: ApiPlan[] }>("/plans", { auth: false });
+        if (!active) return;
+        const bySlug = new Map(res.data.map((p) => [p.slug, p]));
+        setPlans(
+          PLANS.map((plan) => {
+            const real = bySlug.get(plan.slug);
+            if (!real) return plan;
+            const monthly = Number(real.price_monthly);
+            const yearly = Number(real.price_yearly);
+            return {
+              ...plan,
+              monthly: Number.isFinite(monthly) ? monthly : plan.monthly,
+              annual: Number.isFinite(yearly) && yearly > 0 ? yearly / 12 : (Number.isFinite(monthly) ? monthly : plan.annual),
+            };
+          }),
+        );
+      } catch {
+        // Se mantienen los valores de respaldo ya cargados.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <main className="min-h-full">
@@ -229,7 +281,7 @@ export function Landing() {
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {PLANS.map((plan) => {
+          {plans.map((plan) => {
             const price = annual ? plan.annual : plan.monthly;
             return (
               <div
@@ -245,7 +297,7 @@ export function Landing() {
                 )}
                 <h3 className="text-lg font-semibold text-primary">{plan.name}</h3>
                 <p className="mt-3">
-                  <span className="text-3xl font-semibold text-ink">{price}€</span>
+                  <span className="text-3xl font-semibold text-ink">{formatEuro(price)}</span>
                   <span className="text-sm text-ink-soft">/mes</span>
                 </p>
                 {annual && plan.monthly > 0 && (
