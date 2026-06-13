@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
-import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, PageHeader, Spinner } from "@/components/ui";
 
 type Row = { id: string; clocked_at: string; work_mode?: string | null; milestone?: { type: string } };
 type Day = { date: string; label: string; first: string | null; last: string | null; hours: number; incomplete: boolean; empty: boolean; mode: string | null };
@@ -79,7 +80,11 @@ export default function MisFichajesPage() {
     return (
       <div>
         <PageHeader title="Mis fichajes" subtitle="Resumen de tu semana" />
-        <EmptyState title="Sin ficha de empleado" message="No tienes ningún empleado vinculado a esta cuenta." />
+        <EmptyState
+          title="Sin ficha de empleado"
+          message="No tienes ningún empleado vinculado a esta cuenta."
+          action={<Link href="/portal"><Button variant="secondary">Ir al inicio</Button></Link>}
+        />
       </div>
     );
   }

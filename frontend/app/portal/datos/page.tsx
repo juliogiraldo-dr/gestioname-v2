@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { api, uploadFile, fetchBlobUrl, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { Avatar, Button, Card, EmptyState, FormSection, PageHeader, Skeleton, TextField } from "@/components/ui";
@@ -96,7 +97,11 @@ export default function MisDatosPage() {
     return (
       <div>
         <PageHeader title="Mis datos" subtitle="Tus datos de contacto" />
-        <EmptyState title="Sin ficha de empleado" message="No tienes ningún empleado vinculado a esta cuenta." />
+        <EmptyState
+          title="Sin ficha de empleado"
+          message="No tienes ningún empleado vinculado a esta cuenta."
+          action={<Link href="/portal"><Button variant="secondary">Ir al inicio</Button></Link>}
+        />
       </div>
     );
   }
