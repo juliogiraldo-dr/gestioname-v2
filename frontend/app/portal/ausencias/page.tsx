@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { Badge, Button, Card, PageHeader, Spinner } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type LeaveType = { id: string; name: string; type: string; count_in: string };
 type LeaveRow = { id: string; status: string; date_start: string; date_end: string; total_days: number | null };
@@ -84,26 +85,8 @@ export default function AusenciasPage() {
                 ))}
               </select>
             </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-ink">Desde</span>
-              <input
-                type="date"
-                required
-                value={form.date_start}
-                onChange={(e) => setForm({ ...form, date_start: e.target.value })}
-                className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-1.5 block text-sm font-medium text-ink">Hasta</span>
-              <input
-                type="date"
-                required
-                value={form.date_end}
-                onChange={(e) => setForm({ ...form, date_end: e.target.value })}
-                className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
-              />
-            </label>
+            <DateInput label="Desde" minYear={2020} value={form.date_start} onChange={(v) => setForm({ ...form, date_start: v })} />
+            <DateInput label="Hasta" minYear={2020} value={form.date_end} onChange={(v) => setForm({ ...form, date_end: v })} />
 
             {error && <p className="rounded-[var(--radius-fluent)] bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             {types.length === 0 && (

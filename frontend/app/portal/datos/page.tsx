@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, uploadFile, fetchBlobUrl, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
-import { Avatar, Button, Card, FormSection, PageHeader, Skeleton, TextField } from "@/components/ui";
+import { Avatar, Button, Card, EmptyState, FormSection, PageHeader, Skeleton, TextField } from "@/components/ui";
 
 type MeEmployee = {
   full_name: string;
@@ -25,6 +25,7 @@ export default function MisDatosPage() {
   });
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -47,6 +48,8 @@ export default function MisDatosPage() {
         }
       } catch {
         setEmp(null);
+      } finally {
+        setLoaded(true);
       }
     })();
     return () => {
@@ -80,11 +83,20 @@ export default function MisDatosPage() {
     }
   }
 
-  if (emp === null) {
+  if (!loaded) {
     return (
       <div>
         <PageHeader title="Mis datos" subtitle="Tus datos de contacto" />
         <Skeleton rows={5} />
+      </div>
+    );
+  }
+
+  if (emp === null) {
+    return (
+      <div>
+        <PageHeader title="Mis datos" subtitle="Tus datos de contacto" />
+        <EmptyState title="Sin ficha de empleado" message="No tienes ningún empleado vinculado a esta cuenta." />
       </div>
     );
   }

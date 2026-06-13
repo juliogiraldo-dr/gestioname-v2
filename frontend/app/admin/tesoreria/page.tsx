@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import { Badge, Button, Card, EmptyState, Modal, PageHeader, SelectField, Spinner, StatCard, TextField } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type Entity = { id: string; name: string };
 type Category = { id: string; name: string };
@@ -167,7 +168,7 @@ function ExpenseForm({ entityId, categories, expense, onClose, onSaved }: {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <TextField label="Descripción" value={form.description} onChange={(v) => set("description", v)} className="sm:col-span-2" />
         <TextField label="Importe (€)" type="number" value={form.amount} onChange={(v) => set("amount", v)} />
-        <TextField label="Fecha" type="date" value={form.date} onChange={(v) => set("date", v)} />
+        <DateInput label="Fecha" value={form.date} onChange={(v) => set("date", v)} />
         <SelectField label="Categoría" value={form.category_id} onChange={(v) => set("category_id", v)}
           options={[["", "Sin categoría"], ...categories.map((c) => [c.id, c.name] as const)]} />
       </div>

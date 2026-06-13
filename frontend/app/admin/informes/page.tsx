@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { api, ApiError, downloadFile } from "@/lib/api";
 import { Badge, Button, Card, PageHeader, Spinner } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type Company = { id: string; name: string };
 
@@ -142,12 +143,8 @@ export default function InformesPage() {
         <p className="mb-4 text-sm text-ink-soft">Horas previstas, realizadas, sobretiempo y retrasos por empleado.</p>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Desde">
-            <DateInput value={dateFrom} onChange={setDateFrom} />
-          </Field>
-          <Field label="Hasta">
-            <DateInput value={dateTo} onChange={setDateTo} />
-          </Field>
+          <DateInput label="Desde" minYear={2020} value={dateFrom} onChange={setDateFrom} />
+          <DateInput label="Hasta" minYear={2020} value={dateTo} onChange={setDateTo} />
           <Field label="Formato">
             <select
               value={format}
@@ -205,9 +202,7 @@ export default function InformesPage() {
             <p className="text-sm text-ink-soft">Jornada visual por empleado.</p>
           </div>
           <div className="flex items-end gap-3">
-            <Field label="Fecha">
-              <DateInput value={dailyDate} onChange={setDailyDate} />
-            </Field>
+            <DateInput label="Fecha" value={dailyDate} onChange={setDailyDate} />
             <Button variant="secondary" onClick={loadDaily} disabled={dailyLoading}>Ver</Button>
             <Button variant="ghost" onClick={downloadDailyPdf}>PDF</Button>
           </div>
@@ -321,13 +316,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function DateInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <input
-      type="date"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/30"
-    />
-  );
-}

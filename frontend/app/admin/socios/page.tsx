@@ -9,6 +9,7 @@ import { useDebounce } from "@/lib/hooks";
 import { useToast } from "@/lib/toast";
 import { useConfirm } from "@/lib/confirm";
 import { Avatar, Badge, Button, Card, EmptyState, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, TextField } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type Entity = { id: string; name: string };
 type MemberType = { id: string; name: string; fee_amount: number };
@@ -316,7 +317,7 @@ function MemberDetail({ memberId, types, onBack, onChanged }: { memberId: string
           <TextField label="Nombre" value={member.first_name} onChange={(v) => set("first_name", v)} />
           <TextField label="Apellidos" value={member.last_name ?? ""} onChange={(v) => set("last_name", v)} />
           <TextField label="DNI" value={member.dni ?? ""} onChange={(v) => set("dni", v)} />
-          <TextField label="Fecha de nacimiento" type="date" value={member.birth_date ?? ""} onChange={(v) => set("birth_date", v)} />
+          <DateInput label="Fecha de nacimiento" value={member.birth_date ?? ""} onChange={(v) => set("birth_date", v)} />
           <TextField label="Email" value={member.email ?? ""} onChange={(v) => set("email", v)} />
           <TextField label="Teléfono" value={member.phone ?? ""} onChange={(v) => set("phone", v)} />
           <TextField label="Dirección" value={member.address ?? ""} onChange={(v) => set("address", v)} />
@@ -385,7 +386,7 @@ function NewPaymentForm({ memberId, onDone }: { memberId: string; onDone: () => 
       <TextField label="Importe (€)" type="number" value={form.amount} onChange={(v) => setForm((p) => ({ ...p, amount: v }))} placeholder="Cuota del tipo" className="w-32" />
       <SelectField label="Estado" value={form.status} onChange={(v) => setForm((p) => ({ ...p, status: v }))} options={PAY_STATUSES} />
       <SelectField label="Método" value={form.payment_method} onChange={(v) => setForm((p) => ({ ...p, payment_method: v }))} options={PAY_METHODS} />
-      <TextField label="Fecha" type="date" value={form.payment_date} onChange={(v) => setForm((p) => ({ ...p, payment_date: v }))} />
+      <DateInput label="Fecha" value={form.payment_date} onChange={(v) => setForm((p) => ({ ...p, payment_date: v }))} />
       <Button variant="secondary" onClick={submit} disabled={busy}>{busy ? "Registrando…" : "Registrar pago"}</Button>
     </div>
   );

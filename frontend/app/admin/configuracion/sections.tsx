@@ -6,6 +6,7 @@ import { useActiveCompany } from "@/lib/company";
 import { useToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
 import { Badge, Button, Card, EmptyState, Field, Modal, SelectField, Spinner, TextField, Toggle } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 import { CalendarDetail } from "./calendar-detail";
 
 type Company = { id: string; name: string; cif: string; email: string | null; phone: string | null; company_group_id: string | null; group?: { id: string; name: string } | null };
@@ -570,7 +571,7 @@ export function FestivosSection() {
       <div className="flex flex-wrap items-end gap-3">
         <TextField label="Nombre" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} className="w-48" />
         <SelectField label="Tipo" value={form.type} onChange={(v) => setForm((p) => ({ ...p, type: v }))} options={[["nacional", "Nacional"], ["autonomico", "Autonómico"], ["local", "Local"]]} />
-        <TextField label="Fecha" type="date" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} />
+        <DateInput label="Fecha" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} />
         <Button variant="secondary" onClick={create} disabled={!form.name || !form.date}>Añadir festivo</Button>
       </div>
       <Field label="Centros de trabajo (vacío = nacional, aplica a todos)" className="mt-3">

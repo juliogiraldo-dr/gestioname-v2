@@ -15,6 +15,7 @@ import {
   Skeleton,
   TextField,
 } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 import { euro, type Account, type Entry, type FlatPaginated } from "./shared";
 
 export default function AsientosTab({ year, accounts }: { year: number; accounts: Account[] }) {
@@ -300,7 +301,7 @@ function NewEntryModal({
     <Modal title="Nuevo asiento" onClose={onClose}>
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
-          <TextField label="Fecha" type="date" value={date} onChange={setDate} />
+          <DateInput label="Fecha" value={date} onChange={setDate} />
           <div className="sm:col-span-2">
             <TextField label="Referencia (opcional)" value={reference} onChange={setReference} placeholder="Ej. FAC-2024-001" />
           </div>

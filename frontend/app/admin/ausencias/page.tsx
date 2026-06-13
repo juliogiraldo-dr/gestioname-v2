@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import { Badge, Button, Card, Modal, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, StatCard, TextField } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type Employee = { id: string; full_name: string };
 type LeaveRequest = {
@@ -129,8 +130,8 @@ function Listado() {
     <div className="space-y-4">
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <TextField label="Desde" type="date" value={from} onChange={(v) => { setFrom(v); setPage(1); }} />
-          <TextField label="Hasta" type="date" value={to} onChange={(v) => { setTo(v); setPage(1); }} />
+          <DateInput label="Desde" minYear={2020} value={from} onChange={(v) => { setFrom(v); setPage(1); }} />
+          <DateInput label="Hasta" minYear={2020} value={to} onChange={(v) => { setTo(v); setPage(1); }} />
           <SelectField label="Estado" value={status} onChange={(v) => { setStatus(v); setPage(1); }}
             options={[["", "Todos"], ["pendiente", "Pendientes"], ["aprobada", "Aprobadas"], ["rechazada", "Rechazadas"]]} />
         </div>

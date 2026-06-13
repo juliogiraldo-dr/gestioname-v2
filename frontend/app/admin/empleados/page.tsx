@@ -7,6 +7,7 @@ import { api, ApiError, downloadFile, uploadFile } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
 import { useToast } from "@/lib/toast";
 import { Avatar, Badge, Button, Card, EmptyState, Modal, PageHeader, Pagination, type Paginated, SelectField, Skeleton, Spinner, TextField } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type Company = { id: string; name: string };
 type Employee = {
@@ -347,7 +348,9 @@ function EmployeeDetail({ employeeId, companies, onBack, onChanged }: { employee
           {tab === "laboral" && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {LABORAL_FIELDS.map(([k, label, type]) => (
-                <TextField key={k} label={label} type={type ?? "text"} value={str(k)} onChange={(v) => set(k, v)} />
+                type === "date"
+                  ? <DateInput key={k} label={label} value={str(k)} onChange={(v) => set(k, v)} />
+                  : <TextField key={k} label={label} type={type ?? "text"} value={str(k)} onChange={(v) => set(k, v)} />
               ))}
               <SelectField label="Centro de trabajo" value={str("work_center_id")} onChange={(v) => set("work_center_id", v || null)}
                 options={[["", "Sin asignar"], ...centers.map((c) => [c.id, c.name] as const)]} />
@@ -382,7 +385,9 @@ function FieldGrid({ fields, str, set }: {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {fields.map(([k, label, type]) => (
-        <TextField key={k} label={label} type={type ?? "text"} value={str(k)} onChange={(v) => set(k, v)} />
+        type === "date"
+          ? <DateInput key={k} label={label} value={str(k)} onChange={(v) => set(k, v)} />
+          : <TextField key={k} label={label} type={type ?? "text"} value={str(k)} onChange={(v) => set(k, v)} />
       ))}
     </div>
   );
@@ -434,7 +439,7 @@ function QualificationsTab({ employeeId }: { employeeId: string }) {
           options={[["titulacion", "Titulación"], ["curso", "Curso"], ["certificado", "Certificado"], ["conocimiento", "Conocimiento"], ["experiencia", "Experiencia"]]} />
         <TextField label="Nombre" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} className="w-48" />
         <TextField label="Centro" value={form.institution} onChange={(v) => setForm((p) => ({ ...p, institution: v }))} className="w-40" />
-        <TextField label="Obtención" type="date" value={form.date_obtained} onChange={(v) => setForm((p) => ({ ...p, date_obtained: v }))} />
+        <DateInput label="Obtención" value={form.date_obtained} onChange={(v) => setForm((p) => ({ ...p, date_obtained: v }))} />
         <Button variant="secondary" onClick={add} disabled={!form.name}>Añadir</Button>
       </div>
     </div>
@@ -467,7 +472,7 @@ function MaterialsTab({ employeeId }: { employeeId: string }) {
       <div className="flex flex-wrap items-end gap-2">
         <TextField label="Material" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} className="w-44" />
         <TextField label="Nº serie" value={form.serial_number} onChange={(v) => setForm((p) => ({ ...p, serial_number: v }))} className="w-32" />
-        <TextField label="Entrega" type="date" value={form.delivery_date} onChange={(v) => setForm((p) => ({ ...p, delivery_date: v }))} />
+        <DateInput label="Entrega" value={form.delivery_date} onChange={(v) => setForm((p) => ({ ...p, delivery_date: v }))} />
         <SelectField label="Estado" value={form.status} onChange={(v) => setForm((p) => ({ ...p, status: v }))}
           options={[["entregado", "Entregado"], ["devuelto", "Devuelto"], ["perdido", "Perdido"]]} />
         <Button variant="secondary" onClick={add} disabled={!form.name}>Añadir</Button>
@@ -501,7 +506,7 @@ function BehaviorTab({ employeeId }: { employeeId: string }) {
       <div className="flex flex-wrap items-end gap-2">
         <SelectField label="Tipo" value={form.type} onChange={(v) => setForm((p) => ({ ...p, type: v }))}
           options={[["felicitacion", "Felicitación"], ["amonestacion", "Amonestación"], ["sancion", "Sanción"]]} />
-        <TextField label="Fecha" type="date" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} />
+        <DateInput label="Fecha" value={form.date} onChange={(v) => setForm((p) => ({ ...p, date: v }))} />
         <TextField label="Descripción" value={form.description} onChange={(v) => setForm((p) => ({ ...p, description: v }))} className="w-64" />
         <Button variant="secondary" onClick={add} disabled={!form.date}>Añadir</Button>
       </div>

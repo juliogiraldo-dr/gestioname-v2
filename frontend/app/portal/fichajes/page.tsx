@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-import { Badge, Card, PageHeader, Spinner } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, Spinner } from "@/components/ui";
 
 type Row = { id: string; clocked_at: string; work_mode?: string | null; milestone?: { type: string } };
 type Day = { date: string; label: string; first: string | null; last: string | null; hours: number; incomplete: boolean; empty: boolean; mode: string | null };
@@ -21,12 +21,21 @@ function monday(d: Date): Date {
 
 export default function MisFichajesPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    let active = true;
     void (async () => {
-      const res = await api<{ data: Row[] }>("/me/attendances");
-      setRows(res.data);
+      try {
+        const res = await api<{ data: Row[] }>("/me/attendances");
+        if (active) setRows(res.data);
+      } catch {
+        if (active) setError(true);
+      }
     })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const week = useMemo<Day[]>(() => {
@@ -65,6 +74,15 @@ export default function MisFichajesPage() {
 
   const pendingExit = week.some((d) => d.incomplete);
   const total = week.reduce((a, d) => a + d.hours, 0);
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Mis fichajes" subtitle="Resumen de tu semana" />
+        <EmptyState title="Sin ficha de empleado" message="No tienes ningún empleado vinculado a esta cuenta." />
+      </div>
+    );
+  }
 
   return (
     <div>

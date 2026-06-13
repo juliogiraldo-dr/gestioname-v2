@@ -30,7 +30,7 @@ export function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
 
   async function onLogout() {
     await logout();
-    router.push("/login");
+    router.push("/"); // landing pública
   }
 
   return (

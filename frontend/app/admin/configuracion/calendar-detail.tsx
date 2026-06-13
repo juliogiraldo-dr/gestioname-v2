@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { useToast } from "@/lib/toast";
 import { Button, Field, Modal, SelectField, Spinner, Toggle } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 import type { Template } from "./sections";
 
 type CalendarDay = {
@@ -172,9 +173,9 @@ export function CalendarDetail({ calendarId, calendarName, year, templates, onCl
           {/* Asignar rango */}
           <Field label="Asignar un rango de fechas">
             <div className="flex flex-wrap items-end gap-2">
-              <input type="date" value={rangeFrom} onChange={(e) => setRangeFrom(e.target.value)} className="rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary" />
+              <DateInput label="Desde" value={rangeFrom} onChange={setRangeFrom} />
               <span className="pb-2 text-sm text-ink-soft">→</span>
-              <input type="date" value={rangeTo} onChange={(e) => setRangeTo(e.target.value)} className="rounded-[var(--radius-fluent)] border border-line bg-canvas px-3 py-2 text-sm outline-none focus:border-secondary" />
+              <DateInput label="Hasta" value={rangeTo} onChange={setRangeTo} />
               <Button variant="secondary" onClick={assignRange} disabled={busy || !templateId || !rangeFrom || !rangeTo}>Asignar rango</Button>
             </div>
           </Field>

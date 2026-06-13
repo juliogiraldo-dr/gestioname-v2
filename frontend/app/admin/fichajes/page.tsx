@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { useActiveCompany } from "@/lib/company";
 import { formatTime } from "@/lib/utils";
 import { Badge, Button, Card, Modal, PageHeader, SelectField, Spinner, TextField } from "@/components/ui";
+import { DateInput } from "@/components/DateInput";
 
 type WorkCenter = { id: string; name: string };
 type Attendance = {
@@ -98,7 +99,7 @@ export default function FichajesPage() {
       <Card className="p-5">
         <div className="flex flex-wrap items-end gap-3">
           <SelectField label="Centro" value={centerId} onChange={setCenterId} options={[["", "Todos"], ...centers.map((c) => [c.id, c.name] as const)]} />
-          <TextField label="Fecha" type="date" value={date} onChange={setDate} />
+          <DateInput label="Fecha" value={date} onChange={setDate} minYear={2020} />
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setDate((d) => shiftDate(d, -1))}>← Día anterior</Button>
             <Button variant="secondary" onClick={() => setDate((d) => shiftDate(d, 1))}>Día siguiente →</Button>
