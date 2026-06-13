@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Accounting\AccountController;
+use App\Http\Controllers\Accounting\AccountingReportsController;
+use App\Http\Controllers\Accounting\FiscalPeriodController;
+use App\Http\Controllers\Accounting\JournalEntryController;
+use App\Http\Controllers\Accounting\SuenlaceController;
 use App\Http\Controllers\AgreementController;
 use App\Http\Controllers\AgreementLeaveTypeController;
 use App\Http\Controllers\AttendanceController;
@@ -120,6 +125,9 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
 
         Route::get('download-tokens', [DownloadTokenController::class, 'index']);
         Route::post('download-tokens', [DownloadTokenController::class, 'store']);
+
+        // Exportación contable a a3asesor (suenlace.dat).
+        Route::get('accounting/export/suenlace', [SuenlaceController::class, 'export']);
     });
 
     // Configuración de empresa: solo administradores del tenant.
@@ -309,6 +317,29 @@ Route::prefix('v1')->middleware('tenant')->group(function () {
         Route::get('communications', [ComunicacionesController::class, 'history']);
         Route::get('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderShow']);
         Route::put('entities/{entity}/quota-reminder', [ComunicacionesController::class, 'reminderUpdate']);
+    });
+
+    // Contabilidad (módulo contabilidad; el menú se gatea por el módulo activo).
+    Route::middleware(['auth:sanctum', 'role:admin|super-admin'])->prefix('accounting')->group(function () {
+        Route::apiResource('accounts', AccountController::class)
+            ->only(['index', 'store', 'update', 'destroy'])
+            ->parameters(['accounts' => 'account']);
+
+        Route::get('journal-entries', [JournalEntryController::class, 'index']);
+        Route::post('journal-entries', [JournalEntryController::class, 'store']);
+        Route::get('journal-entries/{journalEntry}', [JournalEntryController::class, 'show']);
+        Route::put('journal-entries/{journalEntry}', [JournalEntryController::class, 'update']);
+        Route::delete('journal-entries/{journalEntry}', [JournalEntryController::class, 'destroy']);
+
+        Route::get('fiscal-periods', [FiscalPeriodController::class, 'index']);
+        Route::post('fiscal-periods', [FiscalPeriodController::class, 'store']);
+        Route::post('fiscal-periods/{fiscalPeriod}/close', [FiscalPeriodController::class, 'close']);
+        Route::post('fiscal-periods/{fiscalPeriod}/reopen', [FiscalPeriodController::class, 'reopen']);
+
+        Route::get('balance-sheet', [AccountingReportsController::class, 'balanceSheet']);
+        Route::get('income-statement', [AccountingReportsController::class, 'incomeStatement']);
+        Route::get('trial-balance', [AccountingReportsController::class, 'trialBalance']);
+        Route::get('ledger', [AccountingReportsController::class, 'ledger']);
     });
 
     // Panel super-admin (operador Datarecover). Opera sobre datos del schema public.

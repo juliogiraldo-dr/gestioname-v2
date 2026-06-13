@@ -13,7 +13,7 @@ class TenantModuleApiTest extends TenantTestCase
     {
         $this->getJson($this->url('/tenant-modules'))
             ->assertOk()
-            ->assertJsonCount(7, 'data')
+            ->assertJsonCount(8, 'data')
             ->assertJsonPath('data.0.key', 'rrhh');
     }
 

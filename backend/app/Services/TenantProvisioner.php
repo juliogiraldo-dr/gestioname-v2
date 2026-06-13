@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Models\User;
 use App\Support\TenantSchema;
+use Database\Seeders\ChartOfAccountsSeeder;
 use Database\Seeders\NationalHolidaySeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Artisan;
@@ -116,6 +117,7 @@ final class TenantProvisioner
         try {
             (new RoleSeeder)->run();
             (new NationalHolidaySeeder)->run();
+            (new ChartOfAccountsSeeder)->run();
             TenantModule::syncCatalog();
         } finally {
             TenantSchema::usePublic();

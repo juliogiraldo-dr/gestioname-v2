@@ -28,6 +28,7 @@ class TenantModule extends Model
         'rrhh' => ['label' => 'RRHH / Fichajes', 'description' => 'Empleados, control de jornada y ausencias.', 'default' => true],
         'socios' => ['label' => 'Socios / Asociaciones', 'description' => 'Entidades, socios y cuotas.', 'default' => true],
         'tesoreria' => ['label' => 'Tesorería', 'description' => 'Ingresos, gastos y saldo por entidad.', 'default' => true],
+        'contabilidad' => ['label' => 'Contabilidad', 'description' => 'Libro de cuentas simplificado: plan de cuentas, asientos e informes.', 'default' => false],
         'nominas' => ['label' => 'Nóminas', 'description' => 'Gestión de nóminas (próximamente).', 'default' => false],
         'comunicaciones' => ['label' => 'Comunicaciones', 'description' => 'Comunicación con empleados y socios (próximamente).', 'default' => false],
         'white_label' => ['label' => 'Marca blanca', 'description' => 'Dominio propio y personalización visual (logo, color, nombre).', 'default' => false],

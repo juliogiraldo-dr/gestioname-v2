@@ -8,7 +8,6 @@ import { useDebounce } from "@/lib/hooks";
 import { formatDateTime } from "@/lib/utils";
 import {
   Avatar,
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -349,11 +348,42 @@ function DocumentosTab() {
 // --------------------------------------------------------------- a3asesor ----
 
 function A3asesorTab() {
+  const toast = useToast();
+  const now = new Date().getFullYear();
+  const [year, setYear] = useState(String(now));
+  const [busy, setBusy] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    try {
+      await downloadFile(`/accounting/export/suenlace?year=${year}`, {
+        method: "GET",
+        fallbackName: `suenlace-${year}.dat`,
+      });
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "No se pudo generar el fichero.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <EmptyState
-      title="Exportación a a3asesor (suenlace.dat)"
-      message="La generación del fichero contable para a3asesor Eco/Con estará disponible en la Fase 3 (Contabilidad)."
-      action={<Badge tone="info">Disponible en Fase 3</Badge>}
-    />
+    <Card className="max-w-xl space-y-4 p-6">
+      <div>
+        <h2 className="text-base font-semibold text-primary">Exportación a a3asesor (suenlace.dat)</h2>
+        <p className="mt-1 text-sm text-ink-soft">
+          Genera el fichero contable (a3asesor Eco/Con) con los asientos del ejercicio seleccionado.
+        </p>
+      </div>
+      <div className="flex items-end gap-3">
+        <SelectField
+          label="Ejercicio"
+          value={year}
+          onChange={setYear}
+          options={[now + 1, now, now - 1, now - 2, now - 3].map((y) => [String(y), String(y)] as const)}
+        />
+        <Button onClick={download} disabled={busy}>{busy ? "Generando…" : "Descargar suenlace.dat"}</Button>
+      </div>
+    </Card>
   );
 }

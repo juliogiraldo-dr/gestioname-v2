@@ -37,6 +37,7 @@ const ALL_NAV: GatedNavItem[] = [
   { href: "/admin/entidades", label: "Entidades", icon: EntityIcon, module: "socios" },
   { href: "/admin/socios", label: "Socios", icon: UsersIcon, module: "socios" },
   { href: "/admin/tesoreria", label: "Tesorería", icon: EuroIcon, module: "tesoreria" },
+  { href: "/admin/contabilidad", label: "Contabilidad", icon: ChartIcon, module: "contabilidad" },
   { href: "/admin/informes", label: "Informes", icon: ChartIcon, module: "rrhh" },
   { href: "/admin/comunicaciones", label: "Comunicaciones", icon: NewsIcon },
   { href: "/admin/suscripcion", label: "Suscripción", icon: EuroIcon },
