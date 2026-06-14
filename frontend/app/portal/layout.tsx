@@ -16,7 +16,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !profile) router.replace("/login");
+    if (!loading && !profile) router.replace("/"); // landing pública (también tras logout)
   }, [loading, profile, router]);
 
   if (loading) {

@@ -24,7 +24,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   useEffect(() => {
     if (loading) return;
-    if (!profile) router.replace("/login");
+    if (!profile) router.replace("/"); // landing pública (también tras logout)
     else if (!isSuper) router.replace("/");
   }, [loading, profile, isSuper, router]);
 

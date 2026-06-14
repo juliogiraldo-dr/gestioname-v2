@@ -64,7 +64,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (loading) return;
     if (!profile) {
-      router.replace("/login");
+      router.replace("/"); // landing pública (también tras logout)
     } else if (!canEnter) {
       router.replace("/portal");
     }
